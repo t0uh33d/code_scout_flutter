@@ -12,17 +12,21 @@ class TriggerLogs extends StatefulWidget {
 class _TriggerLogsState extends State<TriggerLogs> {
   @override
   void initState() {
-    CodeScout.init(
-      terimalLoggingConfigutation: CodeScoutLoggingConfiguration(
-        isDebugMode: kDebugMode,
-        analyticsLogs: true,
-        crashLogs: true,
-        devLogs: true,
-        devTraces: true,
-        errorLogs: true,
-        networkCall: true,
-      ),
-    );
+    WidgetsBinding.instance.addPersistentFrameCallback((_) {
+      CodeScout.init(
+        context: context,
+        freshContextFetcher: () => context,
+        terimalLoggingConfigutation: CodeScoutLoggingConfiguration(
+          isDebugMode: kDebugMode,
+          analyticsLogs: true,
+          crashLogs: true,
+          devLogs: true,
+          devTraces: true,
+          errorLogs: true,
+          networkCall: true,
+        ),
+      );
+    });
     super.initState();
   }
 

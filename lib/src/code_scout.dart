@@ -1,9 +1,15 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first, non_constant_identifier_names
 import 'dart:convert';
 
+import 'package:code_scout/src/overlay_elements/overlay_manager.dart';
+import 'package:flutter/material.dart' show BuildContext, Widget;
 import 'package:logger/logger.dart';
 
 part 'code_scout_comms.dart';
+
+final OverlayManager overlayManager = OverlayManager();
+
+typedef FreshContextFetcher = BuildContext Function();
 
 // Define a type for the CodeScoutSocketLogger function
 typedef CodeScoutSocketLogger = void Function(
@@ -40,10 +46,25 @@ class CodeScout {
     _codeScoutSocketLogger = null;
   }
 
+  static FreshContextFetcher? fetcher;
+
   // Initialize the CodeScout class with logging configuration
-  static void init(
-      {required CodeScoutLoggingConfiguration terimalLoggingConfigutation}) {
+  static void init({
+    required CodeScoutLoggingConfiguration terimalLoggingConfigutation,
+    Widget? overlayChild,
+    required BuildContext context,
+    FreshContextFetcher? freshContextFetcher,
+  }) {
     _terimalLoggingConfigutation = terimalLoggingConfigutation;
+
+    fetcher = freshContextFetcher;
+
+    if (overlayManager.context == null) {
+      if (overlayChild != null) overlayManager.overlayChild = overlayChild;
+      overlayManager.context = context;
+      overlayManager.removeOverlay();
+      overlayManager.createOverlayEntry();
+    }
   }
 
   // Log a development trace message

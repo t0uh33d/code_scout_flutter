@@ -1,5 +1,7 @@
 import 'package:code_scout/code_scout.dart' show Wiretap;
-import 'package:code_scout/src/wiretap_menu/wiretap_menu.dart' show WiretapMenu;
+import 'package:code_scout/src/code_scout.dart';
+import 'package:code_scout/src/codescout_interface/wiretap_menu.dart'
+    show CodeScoutInterface;
 import 'package:flutter/material.dart';
 
 import '../utils/draggable_widget.dart';
@@ -26,7 +28,7 @@ class OverlayManager {
     final entry = OverlayEntry(
       builder: (context) => DraggableFloatingWindow(
         onTap: () {
-          BuildContext? freshContext = Wiretap.fetcher?.call();
+          BuildContext? freshContext = CodeScout.fetcher?.call();
           if (isBottomSheetVisible) {
             isBottomSheetVisible = false;
             if (Navigator.of(freshContext ?? context).canPop()) {
@@ -46,7 +48,7 @@ class OverlayManager {
           child: overlayChild ??
               Image.asset(
                 'assets/cwa_setting.png',
-                package: 'flutter_wiretap',
+                package: 'code_scout',
                 height: 80,
                 width: 80,
                 fit: BoxFit.cover,
@@ -67,7 +69,7 @@ class OverlayManager {
       showDragHandle: false,
       isDismissible: false,
       builder: (context) {
-        return const WiretapMenu();
+        return const CodeScoutInterface();
       },
     );
   }

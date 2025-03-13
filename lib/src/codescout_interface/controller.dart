@@ -4,12 +4,13 @@ import 'dart:io';
 import 'package:code_scout/code_scout.dart';
 import 'package:flutter/material.dart';
 
-class WireTapMenuController extends ChangeNotifier {
-  static final WireTapMenuController i = WireTapMenuController._i();
+class CodeScoutInterfaceController extends ChangeNotifier {
+  static final CodeScoutInterfaceController i =
+      CodeScoutInterfaceController._i();
 
-  factory WireTapMenuController() => i;
+  factory CodeScoutInterfaceController() => i;
 
-  WireTapMenuController._i();
+  CodeScoutInterfaceController._i();
 
   Socket? socket;
   String? connectedIP;

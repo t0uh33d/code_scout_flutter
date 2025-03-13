@@ -2,25 +2,26 @@
 
 import 'dart:io';
 
-import 'package:code_scout/src/wiretap_menu/controller.dart';
+import 'package:code_scout/src/codescout_interface/controller.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class WiretapMenu extends StatefulWidget {
-  const WiretapMenu({super.key});
+class CodeScoutInterface extends StatefulWidget {
+  const CodeScoutInterface({super.key});
 
   @override
   // ignore: library_private_types_in_public_api
-  _WiretapMenuState createState() => _WiretapMenuState();
+  _CodeScoutInterfaceState createState() => _CodeScoutInterfaceState();
 }
 
-class _WiretapMenuState extends State<WiretapMenu> {
+class _CodeScoutInterfaceState extends State<CodeScoutInterface> {
   final _formKey = GlobalKey<FormState>();
   final ipController = TextEditingController();
   final portController = TextEditingController();
   final identifierController = TextEditingController();
 
-  final WireTapMenuController wireTapMenuController = WireTapMenuController();
+  final CodeScoutInterfaceController wireTapMenuController =
+      CodeScoutInterfaceController();
 
   Socket? socket;
 
@@ -43,7 +44,7 @@ class _WiretapMenuState extends State<WiretapMenu> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: wireTapMenuController,
-      child: Consumer<WireTapMenuController>(
+      child: Consumer<CodeScoutInterfaceController>(
         builder: (context, config, _) {
           if (config.connected) {
             return Container(
