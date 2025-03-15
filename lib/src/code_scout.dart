@@ -15,15 +15,15 @@ typedef CodeScoutSocketLogger = void Function(
 );
 
 class CodeScout {
-  static final CodeScout i = CodeScout._i();
+  static final CodeScout instance = CodeScout._i();
 
-  static final OverlayManager overlayManager = OverlayManager();
+  static final OverlayManager _overlayManager = OverlayManager();
 
   CodeScout._i();
 
-  factory CodeScout() => i;
+  factory CodeScout() => instance;
 
-  static late CodeScoutLoggingConfiguration _terimalLoggingConfigutation;
+  late CodeScoutLoggingConfiguration _terimalLoggingConfigutation;
 
   static final Logger _logger = Logger();
 
@@ -39,7 +39,7 @@ class CodeScout {
     _codeScoutSocketLogger = null;
   }
 
-  static void init({
+  void init({
     required CodeScoutLoggingConfiguration terimalLoggingConfigutation,
     Widget? overlayChild,
     required BuildContext context,
@@ -49,36 +49,36 @@ class CodeScout {
 
     fetcher = freshContextFetcher;
 
-    if (overlayManager.context == null) {
-      if (overlayChild != null) overlayManager.overlayChild = overlayChild;
-      overlayManager.context = context;
-      overlayManager.removeOverlay();
-      overlayManager.createOverlayEntry();
-      iconHidden = false;
+    if (_overlayManager.context == null) {
+      if (overlayChild != null) _overlayManager.overlayChild = overlayChild;
+      _overlayManager.context = context;
+      _overlayManager.removeOverlay();
+      _overlayManager.createOverlayEntry();
+      isIconHidden = false;
     }
   }
 
-  static bool iconHidden = true;
+  bool isIconHidden = true;
 
-  static void hideIcon() {
-    overlayManager.removeOverlay();
-    iconHidden = true;
+  void hideIcon() {
+    _overlayManager.removeOverlay();
+    isIconHidden = true;
   }
 
-  static void showIcon() {
-    overlayManager.createOverlayEntry();
-    iconHidden = false;
+  void showIcon() {
+    _overlayManager.createOverlayEntry();
+    isIconHidden = false;
   }
 
-  static void toggleIcon() {
-    if (iconHidden) {
+  void toggleIcon() {
+    if (isIconHidden) {
       showIcon();
     } else {
       hideIcon();
     }
   }
 
-  static void logDevTrace(
+  void logDevTrace(
     dynamic message, {
     DateTime? dateTime,
     Object? error,
@@ -103,7 +103,7 @@ class CodeScout {
   }
 
   // Log a debug message
-  static void logDebug(
+  void logDebug(
     dynamic message, {
     DateTime? dateTime,
     Object? error,
@@ -128,7 +128,7 @@ class CodeScout {
     );
   }
 
-  static void logCrash(
+  void logCrash(
     dynamic message, {
     DateTime? dateTime,
     required Object? error,
@@ -152,7 +152,7 @@ class CodeScout {
     );
   }
 
-  static void logError(
+  void logError(
     dynamic message, {
     DateTime? dateTime,
     Object? error,
@@ -176,7 +176,7 @@ class CodeScout {
     );
   }
 
-  static void logAnalytics(
+  void logAnalytics(
     dynamic message, {
     DateTime? dateTime,
     Object? error,

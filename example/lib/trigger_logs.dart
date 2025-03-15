@@ -13,7 +13,7 @@ class _TriggerLogsState extends State<TriggerLogs> {
   @override
   void initState() {
     WidgetsBinding.instance.addPersistentFrameCallback((_) {
-      CodeScout.init(
+      CodeScout.instance.init(
         context: context,
         freshContextFetcher: () => context,
         terimalLoggingConfigutation: CodeScoutLoggingConfiguration(
@@ -44,7 +44,7 @@ class _TriggerLogsState extends State<TriggerLogs> {
             SizedBox(height: 12),
             ElevatedButton(
               onPressed: () {
-                CodeScout.logAnalytics(
+                CodeScout.instance.logAnalytics(
                   'Analytics Triggered',
                   dateTime: DateTime.now(),
                 );
@@ -63,7 +63,7 @@ class _TriggerLogsState extends State<TriggerLogs> {
             // ),
             ElevatedButton(
               onPressed: () {
-                CodeScout.toggleIcon();
+                CodeScout.instance.toggleIcon();
               },
               child: const Text('Toggle icon'),
             ),
