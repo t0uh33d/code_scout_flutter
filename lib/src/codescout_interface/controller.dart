@@ -24,7 +24,7 @@ class CodeScoutInterfaceController extends ChangeNotifier {
   );
 
   void init() {
-    CodeScout.bindSocketLogger((shouldLog, outputEvent) {
+    CodeScout.instance.bindSocketLogger((shouldLog, outputEvent) {
       if (connected &&
           shouldLog.call(codeScoutLoggingConfiguration) &&
           outputEvent != null) {

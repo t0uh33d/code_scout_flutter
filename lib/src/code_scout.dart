@@ -31,12 +31,33 @@ class CodeScout {
 
   static FreshContextFetcher? fetcher;
 
-  static void bindSocketLogger(CodeScoutSocketLogger codeScoutSocketLogger) {
+  void bindSocketLogger(CodeScoutSocketLogger codeScoutSocketLogger) {
     _codeScoutSocketLogger = codeScoutSocketLogger;
   }
 
-  static void unbindSocketLogger() {
+  void unbindSocketLogger() {
     _codeScoutSocketLogger = null;
+  }
+
+  // icon visibility
+  bool isIconHidden = true;
+
+  void hideIcon() {
+    _overlayManager.removeOverlay();
+    isIconHidden = true;
+  }
+
+  void showIcon() {
+    _overlayManager.createOverlayEntry();
+    isIconHidden = false;
+  }
+
+  void toggleIcon() {
+    if (isIconHidden) {
+      showIcon();
+    } else {
+      hideIcon();
+    }
   }
 
   void init({
@@ -55,26 +76,6 @@ class CodeScout {
       _overlayManager.removeOverlay();
       _overlayManager.createOverlayEntry();
       isIconHidden = false;
-    }
-  }
-
-  bool isIconHidden = true;
-
-  void hideIcon() {
-    _overlayManager.removeOverlay();
-    isIconHidden = true;
-  }
-
-  void showIcon() {
-    _overlayManager.createOverlayEntry();
-    isIconHidden = false;
-  }
-
-  void toggleIcon() {
-    if (isIconHidden) {
-      showIcon();
-    } else {
-      hideIcon();
     }
   }
 
