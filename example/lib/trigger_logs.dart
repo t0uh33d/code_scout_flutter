@@ -34,19 +34,41 @@ class _TriggerLogsState extends State<TriggerLogs> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Trigger Logs')),
-      body: Column(
-        children: [
-          const Text('Trigger Logs'),
-          ElevatedButton(
-            onPressed: () {
-              CodeScout.logAnalytics(
-                'Analytics Triggered',
-                dateTime: DateTime.now(),
-              );
-            },
-            child: const Text('Analytics Logs'),
-          ),
-        ],
+      body: Padding(
+        padding: EdgeInsets.all(12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Text('Trigger Logs'),
+            SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () {
+                CodeScout.logAnalytics(
+                  'Analytics Triggered',
+                  dateTime: DateTime.now(),
+                );
+              },
+              child: const Text('Analytics Logs'),
+            ),
+            SizedBox(height: 12),
+            // ElevatedButton(
+            //   onPressed: () {
+            //     CodeScout.logAnalytics(
+            //       'Analytics Triggered',
+            //       dateTime: DateTime.now(),
+            //     );
+            //   },
+            //   child: const Text('Analytics Logs'),
+            // ),
+            ElevatedButton(
+              onPressed: () {
+                CodeScout.toggleIcon();
+              },
+              child: const Text('Toggle icon'),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,6 +1,6 @@
 import 'package:code_scout/code_scout.dart' show Wiretap;
 import 'package:code_scout/src/code_scout.dart';
-import 'package:code_scout/src/codescout_interface/wiretap_menu.dart'
+import 'package:code_scout/src/codescout_interface/menu.dart'
     show CodeScoutInterface;
 import 'package:flutter/material.dart';
 
