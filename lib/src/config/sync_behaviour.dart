@@ -4,7 +4,7 @@ class LogSyncBehavior {
   final String syncEndpoint;
   final Duration syncInterval;
   final int maxBatchSize;
-  final SyncNetworkCondition networkCondition;
+  // final SyncNetworkCondition networkCondition;
   final RetryPolicy retryPolicy;
   final bool autoPurgeAfterSync;
 
@@ -12,7 +12,7 @@ class LogSyncBehavior {
     this.syncEndpoint = 'https://api.codescout.dev/logs',
     this.syncInterval = const Duration(minutes: 5),
     this.maxBatchSize = 100,
-    this.networkCondition = SyncNetworkCondition.wifiOnly,
+    // this.networkCondition = SyncNetworkCondition.wifiOnly,
     this.retryPolicy = const RetryPolicy(
       maxAttempts: 3,
       backoffStrategy: BackoffStrategy.exponential(
@@ -20,5 +20,25 @@ class LogSyncBehavior {
       ),
     ),
     this.autoPurgeAfterSync = true,
+  });
+}
+
+class RetryPolicy {
+  final int maxAttempts;
+  final BackoffStrategy backoffStrategy;
+
+  const RetryPolicy({
+    required this.maxAttempts,
+    required this.backoffStrategy,
+  });
+}
+
+class BackoffStrategy {
+  final Duration initialDelay;
+  final double factor;
+
+  const BackoffStrategy.exponential({
+    this.initialDelay = const Duration(seconds: 1),
+    this.factor = 2.0,
   });
 }

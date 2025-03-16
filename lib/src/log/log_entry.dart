@@ -1,12 +1,16 @@
+import 'package:uuid/uuid.dart';
+
 import 'log_level.dart';
 
 class LogEntry {
+  final String id;
   final LogLevel level;
   final String message;
   final dynamic error;
   final StackTrace? stackTrace;
   final Map<String, dynamic>? metadata;
   final Set<String> tags;
+  final DateTime? timestamp;
 
   LogEntry({
     required this.level,
@@ -15,5 +19,6 @@ class LogEntry {
     this.stackTrace,
     this.metadata,
     this.tags = const {},
-  });
+  })  : id = const Uuid().v4(),
+        timestamp = DateTime.now().toUtc();
 }

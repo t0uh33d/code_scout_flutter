@@ -98,7 +98,7 @@ class CSxInterfaceController extends ChangeNotifier {
       socket?.flush();
       socket?.close();
     } catch (e) {
-      CodeScout.instance.logDevTrace("Socket is already closed", error: e);
+      // CodeScout.instance.logDevTrace("Socket is already closed", error: e);
     }
 
     socket = null;

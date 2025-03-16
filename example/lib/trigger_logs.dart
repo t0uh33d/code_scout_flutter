@@ -16,15 +16,7 @@ class _TriggerLogsState extends State<TriggerLogs> {
       CodeScout.instance.init(
         context: context,
         freshContextFetcher: () => context,
-        // terimalLoggingConfigutation: CodeScoutConfiguration(
-        //   isDebugMode: kDebugMode,
-        //   analyticsLogs: true,
-        //   crashLogs: true,
-        //   devLogs: true,
-        //   devTraces: true,
-        //   errorLogs: true,
-        //   networkCall: true,
-        // ),
+        configuration: CodeScoutConfiguration(),
       );
     });
     super.initState();

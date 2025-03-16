@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first, non_constant_identifier_names
 import 'dart:convert';
 
+import 'package:code_scout/src/config/config.dart';
 import 'package:code_scout/src/csx_interface/overlay_manager.dart';
 import 'package:flutter/material.dart' show BuildContext, Widget;
 
@@ -57,13 +58,15 @@ class CodeScout {
     }
   }
 
+  late CodeScoutConfiguration _configuration;
+
   void init({
-    // required CodeScoutConfiguration terimalLoggingConfigutation,
+    required CodeScoutConfiguration configuration,
     Widget? overlayChild,
     required BuildContext context,
     FreshContextFetcher? freshContextFetcher,
   }) {
-    // _terimalLoggingConfigutation = terimalLoggingConfigutation;
+    _configuration = configuration;
 
     fetcher = freshContextFetcher;
 
@@ -74,29 +77,5 @@ class CodeScout {
       _overlayManager.createOverlayEntry();
       isIconHidden = false;
     }
-  }
-
-  void logDevTrace(
-    dynamic message, {
-    DateTime? dateTime,
-    Object? error,
-    StackTrace? stackTrace,
-  }) {
-    // bool avoidLogging = !_terimalLoggingConfigutation.isDebugMode ||
-    //     !_terimalLoggingConfigutation.devTraces;
-
-    // OutputEvent? outputEvent = _logger.log(
-    //   Level.trace,
-    //   message,
-    //   time: dateTime ?? DateTime.now(),
-    //   error: error,
-    //   stackTrace: stackTrace,
-    //   onlyReturnOutput: avoidLogging,
-    // );
-
-    // _codeScoutSocketLogger?.call(
-    //   (socketConfig) => socketConfig.devTraces,
-    //   outputEvent,
-    // );
   }
 }

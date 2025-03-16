@@ -5,8 +5,6 @@ class LoggingBehavior {
   final LogLevel minimumLevel;
   final bool captureDeviceInfo;
   final bool captureAppContext;
-  final List<String> redactPatterns;
-  final int maxLocalLogAgeDays;
   final bool printToConsole;
 
   LoggingBehavior({
@@ -14,8 +12,6 @@ class LoggingBehavior {
     this.minimumLevel = LogLevel.info,
     this.captureDeviceInfo = true,
     this.captureAppContext = true,
-    this.redactPatterns = const ['password', 'token'],
-    this.maxLocalLogAgeDays = 7,
     this.printToConsole = kDebugMode,
   });
 
