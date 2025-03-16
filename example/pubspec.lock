@@ -117,11 +117,9 @@ packages:
   logger:
     dependency: transitive
     description:
-      path: "."
-      ref: main
-      resolved-ref: "7e31bb22f044c40ea56fa319215eaf16a9e92e25"
-      url: "https://github.com/t0uh33d/logger.git"
-    source: git
+      path: "../logger"
+      relative: true
+    source: path
     version: "2.1.0"
   matcher:
     dependency: transitive

@@ -2,26 +2,25 @@
 
 import 'dart:io';
 
-import 'package:code_scout/src/codescout_interface/controller.dart';
+import 'package:code_scout/src/csx_interface/controller.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class CodeScoutInterface extends StatefulWidget {
-  const CodeScoutInterface({super.key});
+class CSxInterface extends StatefulWidget {
+  const CSxInterface({super.key});
 
   @override
   // ignore: library_private_types_in_public_api
-  _CodeScoutInterfaceState createState() => _CodeScoutInterfaceState();
+  _CSxInterfaceState createState() => _CSxInterfaceState();
 }
 
-class _CodeScoutInterfaceState extends State<CodeScoutInterface> {
+class _CSxInterfaceState extends State<CSxInterface> {
   final _formKey = GlobalKey<FormState>();
   final ipController = TextEditingController();
   final portController = TextEditingController();
   final identifierController = TextEditingController();
 
-  final CodeScoutInterfaceController wireTapMenuController =
-      CodeScoutInterfaceController();
+  final CSxInterfaceController wireTapMenuController = CSxInterfaceController();
 
   Socket? socket;
 
@@ -44,7 +43,7 @@ class _CodeScoutInterfaceState extends State<CodeScoutInterface> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: wireTapMenuController,
-      child: Consumer<CodeScoutInterfaceController>(
+      child: Consumer<CSxInterfaceController>(
         builder: (context, config, _) {
           if (config.connected) {
             return Container(
@@ -99,90 +98,90 @@ class _CodeScoutInterfaceState extends State<CodeScoutInterface> {
                     ),
 
                     // Analytics
-                    CheckboxListTile(
-                      value: config.codeScoutLoggingConfiguration.analyticsLogs,
-                      title: const Text(
-                        "Analytics Logs",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        config.codeScoutLoggingConfiguration.analyticsLogs =
-                            value;
-                        config.notifyListeners();
-                      },
-                    ),
+                    // CheckboxListTile(
+                    //   value: config.codeScoutLoggingConfiguration.analyticsLogs,
+                    //   title: const Text(
+                    //     "Analytics Logs",
+                    //     style: TextStyle(color: Colors.white),
+                    //   ),
+                    //   onChanged: (value) {
+                    //     if (value == null) return;
+                    //     config.codeScoutLoggingConfiguration.analyticsLogs =
+                    //         value;
+                    //     config.notifyListeners();
+                    //   },
+                    // ),
 
-                    // Crash logs
-                    CheckboxListTile(
-                      value: config.codeScoutLoggingConfiguration.crashLogs,
-                      title: const Text(
-                        "Crash Logs",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        config.codeScoutLoggingConfiguration.crashLogs = value;
-                        config.notifyListeners();
-                      },
-                    ),
+                    // // Crash logs
+                    // CheckboxListTile(
+                    //   value: config.codeScoutLoggingConfiguration.crashLogs,
+                    //   title: const Text(
+                    //     "Crash Logs",
+                    //     style: TextStyle(color: Colors.white),
+                    //   ),
+                    //   onChanged: (value) {
+                    //     if (value == null) return;
+                    //     config.codeScoutLoggingConfiguration.crashLogs = value;
+                    //     config.notifyListeners();
+                    //   },
+                    // ),
 
-                    // Dev logs
-                    CheckboxListTile(
-                      value: config.codeScoutLoggingConfiguration.devLogs,
-                      title: const Text(
-                        "Dev Logs",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        config.codeScoutLoggingConfiguration.devLogs = value;
-                        config.notifyListeners();
-                      },
-                    ),
+                    // // Dev logs
+                    // CheckboxListTile(
+                    //   value: config.codeScoutLoggingConfiguration.devLogs,
+                    //   title: const Text(
+                    //     "Dev Logs",
+                    //     style: TextStyle(color: Colors.white),
+                    //   ),
+                    //   onChanged: (value) {
+                    //     if (value == null) return;
+                    //     config.codeScoutLoggingConfiguration.devLogs = value;
+                    //     config.notifyListeners();
+                    //   },
+                    // ),
 
-                    // Dev Traces
-                    CheckboxListTile(
-                      value: config.codeScoutLoggingConfiguration.devTraces,
-                      title: const Text(
-                        "Dev Traces",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        config.codeScoutLoggingConfiguration.devTraces = value;
-                        config.notifyListeners();
-                      },
-                    ),
+                    // // Dev Traces
+                    // CheckboxListTile(
+                    //   value: config.codeScoutLoggingConfiguration.devTraces,
+                    //   title: const Text(
+                    //     "Dev Traces",
+                    //     style: TextStyle(color: Colors.white),
+                    //   ),
+                    //   onChanged: (value) {
+                    //     if (value == null) return;
+                    //     config.codeScoutLoggingConfiguration.devTraces = value;
+                    //     config.notifyListeners();
+                    //   },
+                    // ),
 
-                    // Error Logs
-                    CheckboxListTile(
-                      value: config.codeScoutLoggingConfiguration.errorLogs,
-                      title: const Text(
-                        "Error Logs",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        config.codeScoutLoggingConfiguration.errorLogs = value;
-                        config.notifyListeners();
-                      },
-                    ),
+                    // // Error Logs
+                    // CheckboxListTile(
+                    //   value: config.codeScoutLoggingConfiguration.errorLogs,
+                    //   title: const Text(
+                    //     "Error Logs",
+                    //     style: TextStyle(color: Colors.white),
+                    //   ),
+                    //   onChanged: (value) {
+                    //     if (value == null) return;
+                    //     config.codeScoutLoggingConfiguration.errorLogs = value;
+                    //     config.notifyListeners();
+                    //   },
+                    // ),
 
-                    // Network Calls
-                    CheckboxListTile(
-                      value: config.codeScoutLoggingConfiguration.networkCall,
-                      title: const Text(
-                        "Network Calls",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        config.codeScoutLoggingConfiguration.networkCall =
-                            value;
-                        config.notifyListeners();
-                      },
-                    ),
+                    // // Network Calls
+                    // CheckboxListTile(
+                    //   value: config.codeScoutLoggingConfiguration.networkCall,
+                    //   title: const Text(
+                    //     "Network Calls",
+                    //     style: TextStyle(color: Colors.white),
+                    //   ),
+                    //   onChanged: (value) {
+                    //     if (value == null) return;
+                    //     config.codeScoutLoggingConfiguration.networkCall =
+                    //         value;
+                    //     config.notifyListeners();
+                    //   },
+                    // ),
 
                     Center(
                       child: MaterialButton(

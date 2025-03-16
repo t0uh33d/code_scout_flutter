@@ -16,15 +16,15 @@ class _TriggerLogsState extends State<TriggerLogs> {
       CodeScout.instance.init(
         context: context,
         freshContextFetcher: () => context,
-        terimalLoggingConfigutation: CodeScoutLoggingConfiguration(
-          isDebugMode: kDebugMode,
-          analyticsLogs: true,
-          crashLogs: true,
-          devLogs: true,
-          devTraces: true,
-          errorLogs: true,
-          networkCall: true,
-        ),
+        // terimalLoggingConfigutation: CodeScoutConfiguration(
+        //   isDebugMode: kDebugMode,
+        //   analyticsLogs: true,
+        //   crashLogs: true,
+        //   devLogs: true,
+        //   devTraces: true,
+        //   errorLogs: true,
+        //   networkCall: true,
+        // ),
       );
     });
     super.initState();
@@ -44,10 +44,10 @@ class _TriggerLogsState extends State<TriggerLogs> {
             SizedBox(height: 12),
             ElevatedButton(
               onPressed: () {
-                CodeScout.instance.logAnalytics(
-                  'Analytics Triggered',
-                  dateTime: DateTime.now(),
-                );
+                // CodeScout.instance.logAnalytics(
+                //   'Analytics Triggered',
+                //   dateTime: DateTime.now(),
+                // );
               },
               child: const Text('Analytics Logs'),
             ),

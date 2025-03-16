@@ -1,7 +1,6 @@
 import 'package:code_scout/code_scout.dart' show Wiretap;
 import 'package:code_scout/src/code_scout.dart';
-import 'package:code_scout/src/codescout_interface/menu.dart'
-    show CodeScoutInterface;
+import 'package:code_scout/src/csx_interface/menu.dart' show CSxInterface;
 import 'package:flutter/material.dart';
 
 import '../utils/draggable_widget.dart';
@@ -69,7 +68,7 @@ class OverlayManager {
       showDragHandle: false,
       isDismissible: false,
       builder: (context) {
-        return const CodeScoutInterface();
+        return const CSxInterface();
       },
     );
   }

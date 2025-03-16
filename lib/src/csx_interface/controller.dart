@@ -4,13 +4,12 @@ import 'dart:io';
 import 'package:code_scout/code_scout.dart';
 import 'package:flutter/material.dart';
 
-class CodeScoutInterfaceController extends ChangeNotifier {
-  static final CodeScoutInterfaceController i =
-      CodeScoutInterfaceController._i();
+class CSxInterfaceController extends ChangeNotifier {
+  static final CSxInterfaceController i = CSxInterfaceController._i();
 
-  factory CodeScoutInterfaceController() => i;
+  factory CSxInterfaceController() => i;
 
-  CodeScoutInterfaceController._i();
+  CSxInterfaceController._i();
 
   Socket? socket;
   String? connectedIP;
@@ -18,28 +17,23 @@ class CodeScoutInterfaceController extends ChangeNotifier {
 
   bool connected = false;
 
-  final CodeScoutLoggingConfiguration codeScoutLoggingConfiguration =
-      CodeScoutLoggingConfiguration(
-    devLogs: true,
-  );
-
   void init() {
-    CodeScout.instance.bindSocketLogger((shouldLog, outputEvent) {
-      if (connected &&
-          shouldLog.call(codeScoutLoggingConfiguration) &&
-          outputEvent != null) {
-        String data = outputEvent.lines.join('\n');
+    // CodeScout.instance.bindSocketLogger((shouldLog, outputEvent) {
+    //   if (connected &&
+    //       // shouldLog.call(codeScoutLoggingConfiguration) &&
+    //       outputEvent != null) {
+    //     String data = outputEvent.lines.join('\n');
 
-        CodeScoutComms codeScoutComms = CodeScoutComms(
-          command: CodeScoutCommands.communication,
-          payloadType: CodeScoutPayloadType.devTrace,
-          data: {
-            "output": utf8.encode(data),
-          },
-        );
-        socket?.write(codeScoutComms);
-      }
-    });
+    //     CodeScoutComms codeScoutComms = CodeScoutComms(
+    //       command: CodeScoutCommands.communication,
+    //       payloadType: CodeScoutPayloadType.devTrace,
+    //       data: {
+    //         "output": utf8.encode(data),
+    //       },
+    //     );
+    //     socket?.write(codeScoutComms);
+    //   }
+    // });
   }
 
   void tryToConnect({
@@ -68,7 +62,7 @@ class CodeScoutInterfaceController extends ChangeNotifier {
             String eventData = String.fromCharCodes(event);
             codeScoutComms = CodeScoutComms.fromJson(eventData);
           } catch (e) {
-            CodeScout.instance.logError("Failed to connect", error: e);
+            // CodeScout.instance.logError("Failed to connect", error: e);
             return;
           }
 
@@ -90,10 +84,10 @@ class CodeScoutInterfaceController extends ChangeNotifier {
 
       socket0.write(connectionComms);
     } catch (e) {
-      CodeScout.instance.logError(
-        "Failed to connect to socket in {tryToConnect}",
-        error: e,
-      );
+      // CodeScout.instance.logError(
+      //   "Failed to connect to socket in {tryToConnect}",
+      //   error: e,
+      // );
     } finally {
       notifier?.value = false;
     }

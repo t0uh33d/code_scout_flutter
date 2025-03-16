@@ -10,10 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  crypto: ^3.0.6
+  convert: ^3.1.2
   logger:
-    git:
-      url: https://github.com/t0uh33d/logger.git
-      ref: main
+    path: ./logger
   provider: ^6.1.2
 
 dev_dependencies:
