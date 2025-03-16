@@ -1,4 +1,3 @@
-import 'package:code_scout/code_scout.dart' show Wiretap;
 import 'package:code_scout/src/code_scout.dart';
 import 'package:code_scout/src/csx_interface/menu.dart' show CSxInterface;
 import 'package:flutter/material.dart';

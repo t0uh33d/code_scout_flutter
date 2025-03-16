@@ -21,10 +21,8 @@ class ProjectCredentials {
 
   Map<String, String> get authHeaders {
     final headers = {pcKey: projectKey};
-    if (projectSecret != null) {
-      headers[pcSecret] = _hashSecret(projectSecret!);
-    }
-    return headers;
+    headers[pcSecret] = _hashSecret(projectSecret);
+      return headers;
   }
 
   String _hashSecret(String secret) {

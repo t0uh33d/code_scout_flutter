@@ -1,5 +1,4 @@
 import 'package:code_scout/code_scout.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class TriggerLogs extends StatefulWidget {
@@ -14,7 +13,6 @@ class _TriggerLogsState extends State<TriggerLogs> {
   void initState() {
     WidgetsBinding.instance.addPersistentFrameCallback((_) {
       CodeScout.instance.init(
-        context: context,
         freshContextFetcher: () => context,
         configuration: CodeScoutConfiguration(),
       );
