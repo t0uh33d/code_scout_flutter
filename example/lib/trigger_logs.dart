@@ -14,7 +14,9 @@ class _TriggerLogsState extends State<TriggerLogs> {
     WidgetsBinding.instance.addPersistentFrameCallback((_) {
       CodeScout.instance.init(
         freshContextFetcher: () => context,
-        configuration: CodeScoutConfiguration(),
+        configuration: CodeScoutConfiguration(
+          logging: LoggingBehavior(minimumLevel: LogLevel.all),
+        ),
       );
     });
     super.initState();
@@ -34,10 +36,12 @@ class _TriggerLogsState extends State<TriggerLogs> {
             SizedBox(height: 12),
             ElevatedButton(
               onPressed: () {
-                // CodeScout.instance.logAnalytics(
-                //   'Analytics Triggered',
-                //   dateTime: DateTime.now(),
-                // );
+                CodeScout.instance.log(
+                  level: LogLevel.debug,
+                  message: 'Analytics Triggered',
+                  tags: {'analytics'},
+                  metadata: {'user': 'John Doe', 'email': ''},
+                );
               },
               child: const Text('Analytics Logs'),
             ),

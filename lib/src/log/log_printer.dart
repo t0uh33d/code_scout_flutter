@@ -1,41 +1,34 @@
 import 'dart:convert';
 import 'dart:math';
 
-import 'log_level.dart';
+import 'package:code_scout/src/log/log_entry.dart';
 
 class CSxPrinter {
-  void printToConsole({
-    required LogLevel level,
-    required dynamic message,
-    dynamic error,
-    StackTrace? stackTrace,
-    Map<String, dynamic>? metadata,
-  }) {
+  final LogEntry logEntry;
+
+  CSxPrinter(this.logEntry);
+
+  void printToConsole() {
     final buffer = StringBuffer();
-    buffer.writeln('[${DateTime.now().toIso8601String()}] [$level] $message');
+    buffer.writeln(
+        '[${DateTime.now().toIso8601String()}] [${logEntry.level}] ${logEntry.message}');
 
-    if (metadata != null) {
-      buffer.writeln('Metadata: ${_formatMetadata(metadata)}');
+    if (logEntry.metadata != null) {
+      buffer.writeln('Metadata: ${_formatMetadata(logEntry.metadata!)}');
     }
 
-    if (error != null) {
-      buffer.writeln('Error: ${error.toString()}');
+    if (logEntry.error != null) {
+      buffer.writeln('Error: ${logEntry.error.toString()}');
     }
 
-    if (stackTrace != null) {
-      buffer.writeln('Stack Trace:\n${_formatStackTrace(StackTrace.current)}');
-    }
+    buffer.writeln(
+        'Stack Trace:\n${formatStackTrace(logEntry.stackTrace ?? StackTrace.current, 3)}');
 
-    // Use debugPrint for better handling of large messages
     print(buffer.toString());
   }
 
   String _formatMetadata(Map<String, dynamic> metadata) {
     return const JsonEncoder.withIndent('  ').convert(metadata);
-  }
-
-  String _formatStackTrace(StackTrace stackTrace) {
-    return stackTrace.toString().replaceAll('\n', '\n  ');
   }
 
   String stringifyMessage(dynamic message) {

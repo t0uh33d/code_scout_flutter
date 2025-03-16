@@ -17,8 +17,8 @@ class LoggingBehavior {
 
   bool shouldLog(LogEntry entry) {
     final levelAllowed = entry.level.index >= minimumLevel.index;
-    final tagAllowed =
-        enabledTags.contains('*') || entry.tags.any(enabledTags.contains);
+    final tagAllowed = enabledTags.contains('*') ||
+        (entry.tags != null && entry.tags!.any(enabledTags.contains));
     return levelAllowed && tagAllowed;
   }
 }

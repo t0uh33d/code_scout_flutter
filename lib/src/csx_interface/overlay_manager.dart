@@ -26,7 +26,7 @@ class OverlayManager {
     final entry = OverlayEntry(
       builder: (context) => DraggableFloatingWindow(
         onTap: () {
-          BuildContext? freshContext = CodeScout.fetcher?.call();
+          BuildContext? freshContext = CodeScout.instance.fetcher?.call();
           if (isBottomSheetVisible) {
             isBottomSheetVisible = false;
             if (Navigator.of(freshContext ?? context).canPop()) {

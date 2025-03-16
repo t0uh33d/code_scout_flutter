@@ -2,7 +2,7 @@
 /// levels above certain [LogLevel].
 enum LogLevel {
   all(0),
-  trace(1000),
+  verbose(1000),
   debug(2000),
   info(3000),
   warning(4000),

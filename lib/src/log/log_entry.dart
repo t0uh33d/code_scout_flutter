@@ -5,11 +5,11 @@ import 'log_level.dart';
 class LogEntry {
   final String id;
   final LogLevel level;
-  final String message;
+  final dynamic message;
   final dynamic error;
   final StackTrace? stackTrace;
   final Map<String, dynamic>? metadata;
-  final Set<String> tags;
+  final Set<String>? tags;
   final DateTime? timestamp;
 
   LogEntry({
