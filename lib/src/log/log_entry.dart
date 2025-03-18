@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:code_scout/src/code_scout.dart';
 import 'package:code_scout/src/utils/stack_trace_parser.dart';
 import 'package:uuid/uuid.dart';
@@ -20,6 +18,10 @@ class LogEntry {
   List<String>? _formattedStackTrace;
 
   List<String>? get formattedStackTrace => _formattedStackTrace;
+
+  List<StackCallDetails>? _stackCallDetails;
+
+  List<StackCallDetails>? get stackCallDetails => _stackCallDetails;
 
   LogEntry({
     required this.level,
@@ -49,5 +51,6 @@ class LogEntry {
     parser.parse();
 
     _formattedStackTrace = parser.formattedTrace;
+    _stackCallDetails = parser.stackCallDetails;
   }
 }
