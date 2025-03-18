@@ -31,6 +31,8 @@ class CodeScout {
 
   String get currentSessionId => _currentSessionId;
 
+  CodeScoutConfiguration? get configuration => _configuration;
+
   void init({
     CodeScoutConfiguration? configuration,
     FreshContextFetcher? freshContextFetcher,

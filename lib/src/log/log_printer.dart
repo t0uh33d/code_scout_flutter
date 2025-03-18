@@ -1,7 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
-
-import 'package:code_scout/src/log/ansi_color.dart';
 import 'package:code_scout/src/log/log_entry.dart';
 
 class CSxPrinter {
@@ -22,8 +19,11 @@ class CSxPrinter {
       buffer.writeln('Error: ${logEntry.error.toString()}');
     }
 
-    buffer.writeln(
-        'Stack Trace:\n${formatStackTrace(logEntry.stackTrace ?? StackTrace.current, 3)}');
+    if (logEntry.formattedStackTrace != null) {
+      buffer
+          .writeln('Stack Trace:\n${logEntry.formattedStackTrace?.join('\n')}');
+    }
+    // buffer.writeln('Stack Trace:\n${logEntry.formattedStackTrace?.join('\n')}');
 
     print(buffer.toString());
   }
@@ -45,93 +45,6 @@ class CSxPrinter {
 // Handles any object that is causing JsonEncoder() problems
   Object toEncodableFallback(dynamic object) {
     return object.toString();
-  }
-
-  int stackTraceBeginIndex = 0;
-
-  String? formatStackTrace(StackTrace? stackTrace, int? methodCount) {
-    List<String> lines = stackTrace
-        .toString()
-        .split('\n')
-        .where(
-          (line) =>
-              !_discardDeviceStacktraceLine(line) &&
-              !_discardWebStacktraceLine(line) &&
-              !_discardBrowserStacktraceLine(line) &&
-              line.isNotEmpty,
-        )
-        .toList();
-    List<String> formatted = [];
-
-    int stackTraceLength =
-        (methodCount != null ? min(lines.length, methodCount) : lines.length);
-    for (int count = 0; count < stackTraceLength; count++) {
-      var line = lines[count];
-      if (count < stackTraceBeginIndex) {
-        continue;
-      }
-      formatted.add('#$count   ${line.replaceFirst(RegExp(r'#\d+\s+'), '')}');
-    }
-
-    if (formatted.isEmpty) {
-      return null;
-    } else {
-      return formatted.join('\n');
-    }
-  }
-
-  List<String> excludePaths = [];
-
-  bool _isInExcludePaths(String segment) {
-    for (var element in excludePaths) {
-      if (segment.startsWith(element)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  final _deviceStackTraceRegex = RegExp(r'#[0-9]+\s+(.+) \((\S+)\)');
-
-  bool _discardDeviceStacktraceLine(String line) {
-    var match = _deviceStackTraceRegex.matchAsPrefix(line);
-    if (match == null) {
-      return false;
-    }
-    final segment = match.group(2)!;
-    if (segment.startsWith('package:logger')) {
-      return true;
-    }
-    return _isInExcludePaths(segment);
-  }
-
-  final _browserStackTraceRegex = RegExp(r'^(?:package:)?(dart:\S+|\S+)');
-
-  final _webStackTraceRegex = RegExp(r'^((packages|dart-sdk)/\S+/)');
-
-  bool _discardWebStacktraceLine(String line) {
-    var match = _webStackTraceRegex.matchAsPrefix(line);
-    if (match == null) {
-      return false;
-    }
-    final segment = match.group(1)!;
-    if (segment.startsWith('packages/logger') ||
-        segment.startsWith('dart-sdk/lib')) {
-      return true;
-    }
-    return _isInExcludePaths(segment);
-  }
-
-  bool _discardBrowserStacktraceLine(String line) {
-    var match = _browserStackTraceRegex.matchAsPrefix(line);
-    if (match == null) {
-      return false;
-    }
-    final segment = match.group(1)!;
-    if (segment.startsWith('package:logger') || segment.startsWith('dart:')) {
-      return true;
-    }
-    return _isInExcludePaths(segment);
   }
 
   String getTime(DateTime time) {

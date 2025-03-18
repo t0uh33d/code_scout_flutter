@@ -15,7 +15,10 @@ class _TriggerLogsState extends State<TriggerLogs> {
       CodeScout.instance.init(
         freshContextFetcher: () => context,
         configuration: CodeScoutConfiguration(
-          logging: LoggingBehavior(minimumLevel: LogLevel.all),
+          logging: LoggingBehavior(
+            minimumLevel: LogLevel.all,
+            includeCurrentStackTrace: true,
+          ),
         ),
       );
     });

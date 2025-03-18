@@ -6,6 +6,7 @@ class LoggingBehavior {
   final bool captureDeviceInfo;
   final bool captureAppContext;
   final bool printToConsole;
+  final bool includeCurrentStackTrace;
 
   LoggingBehavior({
     this.enabledTags = const {'*'}, // Wildcard for all tags
@@ -13,6 +14,7 @@ class LoggingBehavior {
     this.captureDeviceInfo = true,
     this.captureAppContext = true,
     this.printToConsole = kDebugMode,
+    this.includeCurrentStackTrace = false,
   });
 
   bool shouldLog(LogEntry entry) {
