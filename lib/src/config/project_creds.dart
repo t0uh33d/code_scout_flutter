@@ -1,14 +1,12 @@
 import 'dart:convert';
 
+import 'package:code_scout/src/const/global_vars.dart';
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
 
 class ProjectCredentials {
   final String projectKey;
   final String projectSecret;
-
-  final String pcKey = "X-Project-Key";
-  final String pcSecret = "X-Project-Secret";
 
   ProjectCredentials({
     required this.projectKey,
@@ -20,9 +18,9 @@ class ProjectCredentials {
   }
 
   Map<String, String> get authHeaders {
-    final headers = {pcKey: projectKey};
-    headers[pcSecret] = _hashSecret(projectSecret);
-      return headers;
+    final headers = {GlobalVars.pcKey: projectKey};
+    headers[GlobalVars.pcSecret] = _hashSecret(projectSecret);
+    return headers;
   }
 
   String _hashSecret(String secret) {

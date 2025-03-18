@@ -4,6 +4,7 @@ import 'log_level.dart';
 
 class LogEntry {
   final String id;
+  final String sessionID;
   final LogLevel level;
   final dynamic message;
   final dynamic error;
@@ -15,6 +16,7 @@ class LogEntry {
   LogEntry({
     required this.level,
     required this.message,
+    required this.sessionID,
     this.error,
     this.stackTrace,
     this.metadata,

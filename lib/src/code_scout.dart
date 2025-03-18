@@ -7,6 +7,7 @@ import 'package:code_scout/src/log/log_entry.dart';
 import 'package:code_scout/src/log/log_printer.dart';
 import 'package:flutter/material.dart' show BuildContext;
 import 'package:logger/logger.dart';
+import 'package:uuid/uuid.dart';
 
 import 'log/log_level.dart';
 
@@ -26,6 +27,10 @@ class CodeScout {
 
   CodeScoutConfiguration? _configuration;
 
+  late String _currentSessionId;
+
+  String get currentSessionId => _currentSessionId;
+
   void init({
     CodeScoutConfiguration? configuration,
     FreshContextFetcher? freshContextFetcher,
@@ -33,6 +38,8 @@ class CodeScout {
     _configuration = configuration;
 
     fetcher = freshContextFetcher;
+
+    _currentSessionId = const Uuid().v4();
 
     if (_overlayManager.context == null) {
       // if (overlayChild != null) _overlayManager.overlayChild = overlayChild;
@@ -42,15 +49,6 @@ class CodeScout {
       isIconHidden = false;
     }
   }
-
-  //  verbose(1000),
-  // debug(2000),
-  // info(3000),
-  // warning(4000),
-  // error(5000),
-  // fatal(6000),
-
-  void logVerbose(String message) {}
 
   void log({
     required LogLevel level,
@@ -72,6 +70,7 @@ class CodeScout {
       stackTrace: stackTrace,
       tags: tags,
       metadata: metadata,
+      sessionID: CodeScout.instance.currentSessionId,
     );
 
     if (!_configuration!.logging.shouldLog(logEntry)) {

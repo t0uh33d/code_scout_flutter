@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:code_scout/src/log/ansi_color.dart';
 import 'package:code_scout/src/log/log_entry.dart';
 
 class CSxPrinter {
