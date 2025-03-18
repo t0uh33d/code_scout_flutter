@@ -16,6 +16,7 @@ dependencies:
   logger:
     path: ./logger
   provider: ^6.1.2
+  archive: ^3.3.2
 
 dev_dependencies:
   flutter_test:

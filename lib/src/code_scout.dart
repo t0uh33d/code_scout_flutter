@@ -81,6 +81,8 @@ class CodeScout {
 
     CSxPrinter printer = CSxPrinter(logEntry);
 
+    print(logEntry.toJson());
+
     printer.printToConsole();
   }
 

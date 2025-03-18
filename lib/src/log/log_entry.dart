@@ -53,4 +53,18 @@ class LogEntry {
     _formattedStackTrace = parser.formattedTrace;
     _stackCallDetails = parser.stackCallDetails;
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'session_id': sessionID,
+      'level': level.toString(),
+      'message': message.toString(),
+      'error': error.toString(),
+      'stack_trace': _stackCallDetails?.map((e) => e.toJson()).toList(),
+      'metadata': metadata,
+      'tags': tags,
+      'timestamp': timestamp.toString(),
+    };
+  }
 }
