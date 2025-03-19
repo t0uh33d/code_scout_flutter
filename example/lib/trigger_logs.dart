@@ -1,4 +1,5 @@
 import 'package:code_scout/code_scout.dart';
+import 'package:example/api_screen.dart';
 import 'package:flutter/material.dart';
 
 class TriggerLogs extends StatefulWidget {
@@ -61,6 +62,17 @@ class _TriggerLogsState extends State<TriggerLogs> {
             ElevatedButton(
               onPressed: () {
                 CodeScout.instance.toggleIcon();
+              },
+              child: const Text('Toggle icon'),
+            ),
+            SizedBox(height: 100),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const NetworkTestScreen(),
+                  ),
+                );
               },
               child: const Text('Toggle icon'),
             ),

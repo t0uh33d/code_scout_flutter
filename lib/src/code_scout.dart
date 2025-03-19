@@ -75,15 +75,7 @@ class CodeScout {
       sessionID: CodeScout.instance.currentSessionId,
     );
 
-    if (!_configuration!.logging.shouldLog(logEntry)) {
-      return;
-    }
-
-    CSxPrinter printer = CSxPrinter(logEntry);
-
-    print(logEntry.toJson());
-
-    printer.printToConsole();
+    logEntry.processLogEntry();
   }
 
   // icon visibility

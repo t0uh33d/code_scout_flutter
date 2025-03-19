@@ -13,4 +13,6 @@ enum LogLevel {
   final int value;
 
   const LogLevel(this.value);
+
+  String get name => toString().split('.').last;
 }

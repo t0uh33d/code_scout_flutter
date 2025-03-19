@@ -1,8 +1,7 @@
-import 'package:code_scout/src/code_scout.dart';
+import 'package:code_scout/code_scout.dart';
+import 'package:code_scout/src/log/log_printer.dart';
 import 'package:code_scout/src/utils/stack_trace_parser.dart';
 import 'package:uuid/uuid.dart';
-
-import 'log_level.dart';
 
 class LogEntry {
   final String id;
@@ -14,6 +13,11 @@ class LogEntry {
   final Map<String, dynamic>? metadata;
   final Set<String>? tags;
   final DateTime? timestamp;
+  final bool isNetworkCall;
+
+  // New network-specific properties
+  final String? requestId;
+  final NetworkCallPhase? callPhase;
 
   List<String>? _formattedStackTrace;
 
@@ -31,13 +35,16 @@ class LogEntry {
     this.stackTrace,
     this.metadata,
     this.tags = const {},
+    this.isNetworkCall = false,
+    this.requestId,
+    this.callPhase,
   })  : id = const Uuid().v4(),
         timestamp = DateTime.now().toUtc() {
     bool includeCurrentStackTrace =
         CodeScout.instance.configuration?.logging.includeCurrentStackTrace ??
             false;
 
-    if (!includeCurrentStackTrace && stackTrace == null) {
+    if (!includeCurrentStackTrace && stackTrace == null || isNetworkCall) {
       return;
     }
 
@@ -45,7 +52,7 @@ class LogEntry {
       stackTrace: stackTrace == null && includeCurrentStackTrace
           ? StackTrace.current
           : stackTrace,
-      methodCount: 3,
+      methodCount: 10,
     );
 
     parser.parse();
@@ -58,13 +65,27 @@ class LogEntry {
     return {
       'id': id,
       'session_id': sessionID,
-      'level': level.toString(),
+      'level': level.name,
       'message': message.toString(),
       'error': error.toString(),
       'stack_trace': _stackCallDetails?.map((e) => e.toJson()).toList(),
       'metadata': metadata,
       'tags': tags,
-      'timestamp': timestamp.toString(),
+      'timestamp': timestamp?.toIso8601String(),
+      'is_network_call': isNetworkCall,
+      'request_id': requestId,
+      'call_phase': callPhase?.name,
     };
+  }
+
+  void processLogEntry({NetworkData? networkData}) {
+    CodeScoutConfiguration cfg = CodeScout.instance.configuration!;
+    if (!cfg.logging.shouldLog(this)) {
+      return;
+    }
+
+    CSxPrinter printer = CSxPrinter(this);
+
+    printer.printToConsole(networkData: networkData);
   }
 }
