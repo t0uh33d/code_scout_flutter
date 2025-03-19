@@ -1,3 +1,5 @@
+import 'dart:nativewrappers/_internal/vm/lib/internal_patch.dart';
+
 import 'package:code_scout/code_scout.dart';
 import 'package:dio/dio.dart';
 
@@ -42,6 +44,8 @@ class CodeScoutDioInterceptor extends Interceptor {
     );
 
     NetworkManager.i.processNetworkResponse(res, reqID);
+
+    printToConsole('cd');
 
     handler.next(response);
   }
