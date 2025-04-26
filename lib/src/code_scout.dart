@@ -4,9 +4,7 @@ import 'dart:convert';
 import 'package:code_scout/src/config/config.dart';
 import 'package:code_scout/src/csx_interface/overlay_manager.dart';
 import 'package:code_scout/src/log/log_entry.dart';
-import 'package:code_scout/src/log/log_printer.dart';
 import 'package:flutter/material.dart' show BuildContext;
-import 'package:logger/logger.dart';
 import 'package:uuid/uuid.dart';
 
 import 'log/log_level.dart';
