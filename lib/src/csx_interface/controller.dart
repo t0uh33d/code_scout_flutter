@@ -61,7 +61,7 @@ class CSxInterfaceController extends ChangeNotifier {
             String eventData = String.fromCharCodes(event);
             codeScoutComms = CodeScoutComms.fromJson(eventData);
           } catch (e) {
-            // CodeScout.instance.logError("Failed to connect", error: e);
+            // printError("Failed to connect", error: e);
             return;
           }
 
@@ -83,7 +83,7 @@ class CSxInterfaceController extends ChangeNotifier {
 
       socket0.write(connectionComms);
     } catch (e) {
-      // CodeScout.instance.logError(
+      // printError(
       //   "Failed to connect to socket in {tryToConnect}",
       //   error: e,
       // );
@@ -97,7 +97,7 @@ class CSxInterfaceController extends ChangeNotifier {
       socket?.flush();
       socket?.close();
     } catch (e) {
-      // CodeScout.instance.logDevTrace("Socket is already closed", error: e);
+      // printDevTrace("Socket is already closed", error: e);
     }
 
     socket = null;

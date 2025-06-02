@@ -53,6 +53,7 @@ class NetworkResponseData extends NetworkData {
       requestId: _request?.requestID,
       callPhase: NetworkCallPhase.response,
       metadata: toMap(),
+      tags: {'network'},
     );
 
     return _logEntry!;

@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:code_scout/code_scout.dart';
+import 'package:code_scout/src/log/log_persistence_service.dart';
 import 'package:code_scout/src/log/log_printer.dart';
 import 'package:code_scout/src/utils/stack_trace_parser.dart';
 import 'package:uuid/uuid.dart';
@@ -66,19 +70,20 @@ class LogEntry {
       'id': id,
       'session_id': sessionID,
       'level': level.name,
-      'message': message.toString(),
-      'error': error.toString(),
-      'stack_trace': _stackCallDetails?.map((e) => e.toJson()).toList(),
-      'metadata': metadata,
-      'tags': tags,
+      'message': message?.toString(),
+      'error': error?.toString(),
+      'stack_trace':
+          jsonEncode(_stackCallDetails?.map((e) => e.toJson()).toList() ?? []),
+      'metadata': jsonEncode(metadata ?? {}),
+      'tags': jsonEncode(tags?.toList() ?? []),
       'timestamp': timestamp?.toIso8601String(),
-      'is_network_call': isNetworkCall,
+      'is_network_call': isNetworkCall ? 1 : 0,
       'request_id': requestId,
       'call_phase': callPhase?.name,
     };
   }
 
-  void processLogEntry({NetworkData? networkData}) {
+  void processLogEntry({NetworkData? networkData}) async {
     CodeScoutConfiguration cfg = CodeScout.instance.configuration!;
     if (!cfg.logging.shouldLog(this)) {
       return;
@@ -87,5 +92,7 @@ class LogEntry {
     CSxPrinter printer = CSxPrinter(this);
 
     printer.printToConsole(networkData: networkData);
+
+    await LogPersistenceService.i.saveLogEntry(this);
   }
 }

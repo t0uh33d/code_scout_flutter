@@ -1,31 +1,58 @@
-import 'dart:convert';
-
-import 'package:code_scout/src/const/global_vars.dart';
-import 'package:convert/convert.dart';
-import 'package:crypto/crypto.dart';
+part of 'config.dart';
 
 class ProjectCredentials {
-  final String projectKey;
+  final String projectID;
   final String projectSecret;
+  final String link;
 
   ProjectCredentials({
-    required this.projectKey,
+    required this.projectID,
     required this.projectSecret,
+    required this.link,
   }) {
-    if (projectKey.isEmpty) {
-      throw ArgumentError('Project key cannot be empty');
+    if (projectID.isEmpty || projectSecret.isEmpty) {
+      throw ArgumentError('Project key and secret cannot be empty.');
+    }
+
+    if (!Uri.parse(link).isAbsolute) {
+      throw ArgumentError('Link must be a valid absolute URL.');
+    }
+
+    if (!link.endsWith('/')) {
+      throw ArgumentError('Link must end with a trailing slash.');
     }
   }
 
+  Future<bool> get valid async => await validateCredentials();
+
   Map<String, String> get authHeaders {
-    final headers = {GlobalVars.pcKey: projectKey};
-    headers[GlobalVars.pcSecret] = _hashSecret(projectSecret);
+    final headers = {GlobalVars.pcKey: projectID};
+    headers[GlobalVars.pcSecret] = projectSecret;
     return headers;
   }
 
-  String _hashSecret(String secret) {
-    // Implement HMAC-based hashing
-    final hmac = Hmac(sha256, utf8.encode(projectKey));
-    return hex.encode(hmac.convert(utf8.encode(secret)).bytes);
+  // String _hashSecret(String secret) {
+  //   final hmac = Hmac(sha256, utf8.encode(projectID));
+  //   return hex.encode(hmac.convert(utf8.encode(secret)).bytes);
+  // }
+
+  bool? _credsValid;
+
+  Future<bool> validateCredentials() async {
+    if (_credsValid != null) return _credsValid!;
+
+    try {
+      Uri uri = Uri.parse('$link/api/validate');
+      final response = await http.get(uri, headers: authHeaders);
+      if (response.statusCode == 200) {
+        _credsValid = true;
+      } else {
+        _credsValid = false;
+      }
+    } catch (e) {
+      _credsValid = false;
+    }
+
+    return _credsValid!;
   }
 }
