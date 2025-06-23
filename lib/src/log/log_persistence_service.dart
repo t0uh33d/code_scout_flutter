@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:code_scout/code_scout.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -62,17 +64,43 @@ class LogPersistenceService {
   }
 
   Future<List<Map<String, dynamic>>?> getLogEntries({int limit = 100}) async {
+    _database ??= await database;
+
     final List<Map<String, dynamic>>? maps = await _database?.query(
       'logs',
       orderBy: 'timestamp ASC',
       limit: limit,
     );
 
-    return maps;
+    if (maps == null) return null;
+
+    return maps.map(_cleanDecodedLogEntry).toList();
+  }
+
+  Map<String, dynamic> _cleanDecodedLogEntry(Map<String, dynamic> raw) {
+    return {
+      ...raw,
+      'tags': _safeJsonDecode(raw['tags'], fallback: []),
+      'metadata': _safeJsonDecode(raw['metadata'], fallback: {}),
+      'stack_trace': _safeJsonDecode(raw['stack_trace'], fallback: []),
+    };
+  }
+
+  dynamic _safeJsonDecode(dynamic value, {required dynamic fallback}) {
+    if (value is String) {
+      try {
+        return jsonDecode(value);
+      } catch (_) {
+        return fallback;
+      }
+    }
+    return fallback;
   }
 
   Future<void> deleteLogEntries(List<String> ids) async {
     if (ids.isEmpty) return;
+
+    _database ??= await database;
 
     final placeholders = List.filled(ids.length, '?').join(', ');
     await _database?.delete(

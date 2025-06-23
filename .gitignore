@@ -30,3 +30,4 @@ example/
 .flutter-plugins
 .flutter-plugins-dependencies
 build/
+.vscode/

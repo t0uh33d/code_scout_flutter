@@ -38,10 +38,12 @@ class LogSyncWorker {
     LogSyncBehavior syncBehaviour = config.sync!;
 
     _syncTimer = Timer.periodic(
-        syncBehaviour.syncInterval, (timer) => _sync(syncBehaviour, timer));
+        syncBehaviour.syncInterval,
+        (timer) =>
+            _sync(syncBehaviour, timer, config.projectCredentials!.link));
   }
 
-  void _sync(LogSyncBehavior syncBehaviour, Timer timer) async {
+  void _sync(LogSyncBehavior syncBehaviour, Timer timer, String baseUrl) async {
     try {
       List<Map<String, dynamic>>? logs = await LogPersistenceService.i
           .getLogEntries(limit: syncBehaviour.maxBatchSize);
@@ -53,17 +55,32 @@ class LogSyncWorker {
         return;
       }
 
-      Future<File> file = LogCompressor.compress(logs);
+      print(logs);
+
+      for (int i = 0; i < logs.length; i++) {
+        var x = jsonEncode(logs[i]);
+
+        print(x);
+      }
+
+      File file = await LogCompressor.compress(logs);
 
       // Upload logs
-      await _uploadTarGz(await file);
+      await _uploadTarGz(baseUrl, file);
+      print(
+        'LogSyncWorker: Logs uploaded successfully.',
+      );
+
+      await file.delete();
+      print(
+        'LogSyncWorker: Temporary log file deleted.',
+      );
 
       LogPersistenceService.i.deleteLogEntries(
         logs.map((log) => log['id'] as String).toList(),
       );
-
       print(
-        'LogSyncWorker: Logs uploaded successfully.',
+        'LogSyncWorker: Logs deleted after successful upload.',
       );
     } catch (e, _) {
       print(
@@ -72,8 +89,8 @@ class LogSyncWorker {
     }
   }
 
-  Future<void> _uploadTarGz(File file) async {
-    final uri = Uri.parse('http://localhost:24275/api/logs/dump');
+  Future<void> _uploadTarGz(String baseURL, File file) async {
+    final uri = Uri.parse('${baseURL}api/logs/dump');
     final request = http.MultipartRequest('POST', uri);
     request.files.add(await http.MultipartFile.fromPath('file', file.path));
     request.headers.addAll(

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:code_scout/code_scout.dart';
 import 'package:code_scout/src/log/log_persistence_service.dart';
@@ -11,7 +10,7 @@ class LogEntry {
   final String id;
   final String sessionID;
   final LogLevel level;
-  final dynamic message;
+  final String message;
   final dynamic error;
   final StackTrace? stackTrace;
   final Map<String, dynamic>? metadata;
@@ -45,8 +44,7 @@ class LogEntry {
   })  : id = const Uuid().v4(),
         timestamp = DateTime.now().toUtc() {
     bool includeCurrentStackTrace =
-        CodeScout.instance.configuration?.logging.includeCurrentStackTrace ??
-            false;
+        CodeScout.instance.configuration.logging.includeCurrentStackTrace;
 
     if (!includeCurrentStackTrace && stackTrace == null || isNetworkCall) {
       return;
@@ -70,7 +68,7 @@ class LogEntry {
       'id': id,
       'session_id': sessionID,
       'level': level.name,
-      'message': message?.toString(),
+      'message': message,
       'error': error?.toString(),
       'stack_trace':
           jsonEncode(_stackCallDetails?.map((e) => e.toJson()).toList() ?? []),
