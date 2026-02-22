@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:code_scout/code_scout.dart';
 import 'package:code_scout/src/log/log_compressor.dart';
 import 'package:code_scout/src/log/log_persistence_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class LogSyncWorker {
@@ -22,7 +24,7 @@ class LogSyncWorker {
     CodeScoutConfiguration config = CodeScout.instance.configuration;
 
     if (config.projectCredentials == null) {
-      print(
+      log(
         'LogSyncWorker: Project credentials are not configured.',
       );
       return;
