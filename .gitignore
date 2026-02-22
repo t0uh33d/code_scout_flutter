@@ -31,3 +31,6 @@ example/
 .flutter-plugins-dependencies
 build/
 .vscode/
+package-lock.json
+.claude
+.entire 
