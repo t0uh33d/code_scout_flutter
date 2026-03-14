@@ -7,6 +7,7 @@
 </p>
 
 <p align="center">
+  <a href="https://codescout.tech">Website</a> &middot;
   <a href="https://github.com/t0uh33d/code_scout_flutter">GitHub</a> &middot;
   <a href="https://github.com/t0uh33d/code_scout">Server</a>
 </p>
