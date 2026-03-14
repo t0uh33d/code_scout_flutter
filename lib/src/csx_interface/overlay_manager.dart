@@ -1,4 +1,5 @@
 import 'package:code_scout/src/code_scout.dart';
+import 'package:code_scout/src/const/global_vars.dart';
 import 'package:code_scout/src/csx_interface/menu.dart' show CSxInterface;
 import 'package:flutter/material.dart';
 
@@ -38,17 +39,17 @@ class OverlayManager {
           }
         },
         child: Container(
-          // color: Colors.red,
+          color: Colors.red,
           constraints: const BoxConstraints(
-            maxHeight: 80,
-            maxWidth: 80,
+            maxHeight: GlobalVars.iconContainerSize,
+            maxWidth: GlobalVars.iconContainerSize,
           ),
           child: overlayChild ??
               Image.asset(
-                'assets/cwa_setting.png',
+                'assets/pim.png',
                 package: 'code_scout',
-                height: 80,
-                width: 80,
+                height: GlobalVars.iconSize,
+                width: GlobalVars.iconSize,
                 fit: BoxFit.cover,
               ),
         ),

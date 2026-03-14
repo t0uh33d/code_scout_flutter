@@ -1,3 +1,4 @@
+import 'package:code_scout/src/const/global_vars.dart';
 import 'package:flutter/material.dart';
 
 class DraggableFloatingWindow extends StatefulWidget {
@@ -12,16 +13,30 @@ class DraggableFloatingWindow extends StatefulWidget {
 
 class _DraggableFloatingWindowState extends State<DraggableFloatingWindow> {
   Offset? position;
+
+  Offset _clampPosition(Offset raw) {
+    final screen = MediaQuery.sizeOf(context);
+    final padding = MediaQuery.paddingOf(context);
+    return Offset(
+      raw.dx.clamp(0, screen.width - GlobalVars.iconContainerSize / 2),
+      raw.dy.clamp(padding.top,
+          screen.height - padding.bottom - GlobalVars.iconContainerSize / 2),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Positioned(
       left: position?.dx ?? 0,
       top: position?.dy ?? 100,
       child: GestureDetector(
-        onPanStart: (details) => setState(
-            () => position = details.globalPosition - const Offset(25, 25)),
+        onPanStart: (details) => setState(() => position = _clampPosition(
+            details.globalPosition -
+                const Offset(
+                    GlobalVars.iconHalfSize, GlobalVars.iconHalfSize))),
         onPanUpdate: (details) => setState(() {
-          position = details.globalPosition - const Offset(25, 25);
+          position = _clampPosition(details.globalPosition -
+              const Offset(GlobalVars.iconHalfSize, GlobalVars.iconHalfSize));
         }),
         onTap: widget.onTap,
         child: widget.child,
