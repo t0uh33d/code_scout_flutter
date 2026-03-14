@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:code_scout/code_scout.dart';
 import 'package:code_scout/src/log/log_persistence_service.dart';
@@ -18,7 +19,6 @@ class LogEntry {
   final DateTime? timestamp;
   final bool isNetworkCall;
 
-  // New network-specific properties
   final String? requestId;
   final NetworkCallPhase? callPhase;
 
@@ -43,10 +43,10 @@ class LogEntry {
     this.callPhase,
   })  : id = const Uuid().v4(),
         timestamp = DateTime.now().toUtc() {
-    bool includeCurrentStackTrace =
+    final includeCurrentStackTrace =
         CodeScout.instance.configuration.logging.includeCurrentStackTrace;
 
-    if (!includeCurrentStackTrace && stackTrace == null || isNetworkCall) {
+    if ((!includeCurrentStackTrace && stackTrace == null) || isNetworkCall) {
       return;
     }
 
@@ -70,8 +70,9 @@ class LogEntry {
       'level': level.name,
       'message': message,
       'error': error?.toString(),
-      'stack_trace':
-          jsonEncode(_stackCallDetails?.map((e) => e.toJson()).toList() ?? []),
+      'stack_trace': jsonEncode(
+        _stackCallDetails?.map((e) => e.toJson()).toList() ?? [],
+      ),
       'metadata': jsonEncode(metadata ?? {}),
       'tags': jsonEncode(tags?.toList() ?? []),
       'timestamp': timestamp?.toIso8601String(),
@@ -81,16 +82,19 @@ class LogEntry {
     };
   }
 
-  void processLogEntry({NetworkData? networkData}) async {
-    CodeScoutConfiguration cfg = CodeScout.instance.configuration!;
-    if (!cfg.logging.shouldLog(this)) {
-      return;
+  Future<void> processLogEntry({NetworkData? networkData}) async {
+    try {
+      CodeScoutConfiguration cfg = CodeScout.instance.configuration;
+      if (!cfg.logging.shouldLog(this)) {
+        return;
+      }
+
+      CSxPrinter printer = CSxPrinter(this);
+      printer.printToConsole(networkData: networkData);
+
+      await LogPersistenceService.i.saveLogEntry(this);
+    } catch (e, st) {
+      log('CodeScout: Failed to process log entry: $e', stackTrace: st);
     }
-
-    CSxPrinter printer = CSxPrinter(this);
-
-    printer.printToConsole(networkData: networkData);
-
-    await LogPersistenceService.i.saveLogEntry(this);
   }
 }

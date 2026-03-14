@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:code_scout/code_scout.dart';
@@ -16,26 +17,11 @@ class CSxInterfaceController extends ChangeNotifier {
 
   bool connected = false;
 
-  void init() {
-    // CodeScout.instance.bindSocketLogger((shouldLog, outputEvent) {
-    //   if (connected &&
-    //       // shouldLog.call(codeScoutLoggingConfiguration) &&
-    //       outputEvent != null) {
-    //     String data = outputEvent.lines.join('\n');
+  static const Duration _connectTimeout = Duration(seconds: 10);
 
-    //     CodeScoutComms codeScoutComms = CodeScoutComms(
-    //       command: CodeScoutCommands.communication,
-    //       payloadType: CodeScoutPayloadType.devTrace,
-    //       data: {
-    //         "output": utf8.encode(data),
-    //       },
-    //     );
-    //     socket?.write(codeScoutComms);
-    //   }
-    // });
-  }
+  void init() {}
 
-  void tryToConnect({
+  Future<void> tryToConnect({
     required String ip,
     required String port,
     required String identifier,
@@ -43,10 +29,16 @@ class CSxInterfaceController extends ChangeNotifier {
   }) async {
     notifier?.value = true;
     try {
-      int port0 = int.parse(port);
-      Socket socket0 = await Socket.connect(ip, port0);
+      final port0 = int.tryParse(port);
+      if (port0 == null || port0 < 1 || port0 > 65535) {
+        log('CodeScout: Invalid port number: $port');
+        return;
+      }
 
-      CodeScoutComms connectionComms = CodeScoutComms(
+      final socket0 =
+          await Socket.connect(ip, port0, timeout: _connectTimeout);
+
+      final connectionComms = CodeScoutComms(
         command: CodeScoutCommands.establishConnection,
         payloadType: CodeScoutPayloadType.identifier,
         data: {
@@ -61,7 +53,7 @@ class CSxInterfaceController extends ChangeNotifier {
             String eventData = String.fromCharCodes(event);
             codeScoutComms = CodeScoutComms.fromJson(eventData);
           } catch (e) {
-            // printError("Failed to connect", error: e);
+            log('CodeScout: Failed to parse socket event: $e');
             return;
           }
 
@@ -74,19 +66,19 @@ class CSxInterfaceController extends ChangeNotifier {
             return;
           }
 
-          throw codeScoutComms;
+          log('CodeScout: Unexpected socket command: ${codeScoutComms.command}');
         },
-        // cancelOnError: true,
-        // onError: resetConnection,
+        onError: (e) {
+          log('CodeScout: Socket error: $e');
+          resetConnection();
+        },
         onDone: resetConnection,
+        cancelOnError: true,
       );
 
       socket0.write(connectionComms);
     } catch (e) {
-      // printError(
-      //   "Failed to connect to socket in {tryToConnect}",
-      //   error: e,
-      // );
+      log('CodeScout: Failed to connect: $e');
     } finally {
       notifier?.value = false;
     }
@@ -97,7 +89,7 @@ class CSxInterfaceController extends ChangeNotifier {
       socket?.flush();
       socket?.close();
     } catch (e) {
-      // printDevTrace("Socket is already closed", error: e);
+      log('CodeScout: Error closing socket: $e');
     }
 
     socket = null;
@@ -105,5 +97,11 @@ class CSxInterfaceController extends ChangeNotifier {
     connectedIP = null;
     connectedPort = null;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    resetConnection();
+    super.dispose();
   }
 }

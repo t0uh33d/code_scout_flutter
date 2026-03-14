@@ -14,7 +14,8 @@ class CSxPrinter {
 
     // Print timestamp and log level with colored formatting
     buffer.writeln(
-        '[${getTime(logEntry.timestamp!.toLocal())}] [${_formatLogLevel(logEntry.level)}] ${stringifyMessage(logEntry.message)}');
+      '[${getTime(logEntry.timestamp!.toLocal())}] [${_formatLogLevel(logEntry.level)}] ${stringifyMessage(logEntry.message)}',
+    );
 
     // Handle network-specific logs
     if (logEntry.isNetworkCall == true) {
@@ -38,7 +39,8 @@ class CSxPrinter {
     // Print stack trace for both network and regular logs if available
     if (logEntry.formattedStackTrace != null) {
       buffer.writeln(
-          '📚 Stack Trace:\n${logEntry.formattedStackTrace?.join('\n')}');
+        '📚 Stack Trace:\n${logEntry.formattedStackTrace?.join('\n')}',
+      );
     }
 
     buffer.writeln(_createDivider());
@@ -48,7 +50,8 @@ class CSxPrinter {
 
   void _formatNetworkLog(StringBuffer buffer, NetworkData? networkData) {
     buffer.writeln(
-        '📡 Network Call - ${_getNetworkPhaseEmoji(logEntry.callPhase)}');
+      '📡 Network Call - ${_getNetworkPhaseEmoji(logEntry.callPhase)}',
+    );
 
     if (logEntry.requestId != null) {
       buffer.writeln('🆔 Request ID: ${logEntry.requestId}');
@@ -88,7 +91,8 @@ class CSxPrinter {
           logEntry.callPhase == NetworkCallPhase.error) {
         if (metadata.containsKey('request') && metadata['request'] != null) {
           buffer.writeln(
-              '🔍 Original Request: ${_formatMetadata(metadata['request'])}');
+            '🔍 Original Request: ${_formatMetadata(metadata['request'])}',
+          );
         }
       }
     }

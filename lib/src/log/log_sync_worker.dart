@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
 import 'package:code_scout/code_scout.dart';
 import 'package:code_scout/src/log/log_compressor.dart';
 import 'package:code_scout/src/log/log_persistence_service.dart';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class LogSyncWorker {
@@ -19,90 +17,125 @@ class LogSyncWorker {
   }
 
   Timer? _syncTimer;
+  bool _syncing = false;
+  int _consecutiveFailures = 0;
+  static const int _maxConsecutiveFailures = 5;
+  static const Duration _uploadTimeout = Duration(seconds: 30);
+
+  bool get isRunning => _syncTimer?.isActive ?? false;
 
   void start() {
-    CodeScoutConfiguration config = CodeScout.instance.configuration;
+    if (_syncTimer?.isActive ?? false) return;
+
+    final config = CodeScout.instance.configuration;
 
     if (config.projectCredentials == null) {
-      log(
-        'LogSyncWorker: Project credentials are not configured.',
-      );
+      log('LogSyncWorker: Project credentials are not configured.');
       return;
     }
 
     if (config.sync == null) {
-      print(
-        'LogSyncWorker: Sync behavior is not configured.',
-      );
+      log('LogSyncWorker: Sync behavior is not configured.');
       return;
     }
 
-    LogSyncBehavior syncBehaviour = config.sync!;
+    _consecutiveFailures = 0;
 
     _syncTimer = Timer.periodic(
-        syncBehaviour.syncInterval,
-        (timer) =>
-            _sync(syncBehaviour, timer, config.projectCredentials!.link));
+      config.sync!.syncInterval,
+      (_) => _sync(),
+    );
   }
 
-  void _sync(LogSyncBehavior syncBehaviour, Timer timer, String baseUrl) async {
+  void stop() {
+    _syncTimer?.cancel();
+    _syncTimer = null;
+  }
+
+  Future<void> _sync() async {
+    if (_syncing) return;
+    _syncing = true;
+
+    final config = CodeScout.instance.configuration;
+    final syncBehaviour = config.sync;
+    final creds = config.projectCredentials;
+    if (syncBehaviour == null || creds == null) {
+      _syncing = false;
+      return;
+    }
+
+    List<Map<String, dynamic>> logs = [];
+    List<String> logIds = [];
+    File? file;
+
     try {
-      List<Map<String, dynamic>>? logs = await LogPersistenceService.i
+      logs = await LogPersistenceService.i
           .getLogEntries(limit: syncBehaviour.maxBatchSize);
 
-      if (logs == null || logs.isEmpty) {
-        print(
-          'LogSyncWorker: No logs to sync.',
-        );
+      if (logs.isEmpty) {
+        _syncing = false;
         return;
       }
 
-      print(logs);
+      logIds = logs.map((l) => l['id'] as String).toList();
 
-      for (int i = 0; i < logs.length; i++) {
-        var x = jsonEncode(logs[i]);
+      // Mark logs as syncing so concurrent cycles don't pick them up
+      await LogPersistenceService.i.markAsSyncing(logIds);
 
-        print(x);
+      // Compress
+      file = await LogCompressor.compress(logs);
+
+      // Upload with timeout
+      await _uploadTarGz(creds.link, file, creds.authHeaders)
+          .timeout(_uploadTimeout);
+
+      // Success — delete the logs from DB
+      await LogPersistenceService.i.deleteLogEntries(logIds);
+
+      _consecutiveFailures = 0;
+    } catch (e, st) {
+      log('LogSyncWorker: Sync failed: $e', stackTrace: st);
+      _consecutiveFailures++;
+
+      // Roll back sync_status so logs are retried next cycle
+      if (logIds.isNotEmpty) {
+        try {
+          await LogPersistenceService.i.markAsUnsync(logIds);
+        } catch (rollbackError) {
+          log('LogSyncWorker: Failed to rollback sync status: $rollbackError');
+        }
       }
 
-      File file = await LogCompressor.compress(logs);
-
-      // Upload logs
-      await _uploadTarGz(baseUrl, file);
-      print(
-        'LogSyncWorker: Logs uploaded successfully.',
-      );
-
-      await file.delete();
-      print(
-        'LogSyncWorker: Temporary log file deleted.',
-      );
-
-      LogPersistenceService.i.deleteLogEntries(
-        logs.map((log) => log['id'] as String).toList(),
-      );
-      print(
-        'LogSyncWorker: Logs deleted after successful upload.',
-      );
-    } catch (e, _) {
-      print(
-        'LogSyncWorker: Error during log sync.',
-      );
+      // Back off after repeated failures
+      if (_consecutiveFailures >= _maxConsecutiveFailures) {
+        log('LogSyncWorker: Too many consecutive failures ($_consecutiveFailures), stopping sync.');
+        stop();
+      }
+    } finally {
+      // Clean up temp file
+      try {
+        if (file != null && await file.exists()) {
+          await file.delete();
+        }
+      } catch (_) {}
+      _syncing = false;
     }
   }
 
-  Future<void> _uploadTarGz(String baseURL, File file) async {
+  Future<void> _uploadTarGz(
+      String baseURL, File file, Map<String, String> headers) async {
     final uri = Uri.parse('${baseURL}api/logs/dump');
     final request = http.MultipartRequest('POST', uri);
     request.files.add(await http.MultipartFile.fromPath('file', file.path));
-    request.headers.addAll(
-        CodeScout.instance.configuration.projectCredentials?.authHeaders ?? {});
+    request.headers.addAll(headers);
 
     final response = await request.send();
 
     if (response.statusCode != 200) {
+      final body = await response.stream.bytesToString();
       throw Exception(
-          'LogSyncWorker: Failed to upload logs. Status code: ${response.statusCode}');
+        'Upload failed (${response.statusCode}): $body',
+      );
     }
   }
 }

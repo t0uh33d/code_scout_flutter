@@ -42,7 +42,7 @@ class ProjectCredentials {
     if (_credsValid != null) return _credsValid!;
 
     try {
-      Uri uri = Uri.parse('$link/api/validate');
+      Uri uri = Uri.parse('${link}api/validate');
       final response = await http.get(uri, headers: authHeaders);
       if (response.statusCode == 200) {
         _credsValid = true;
