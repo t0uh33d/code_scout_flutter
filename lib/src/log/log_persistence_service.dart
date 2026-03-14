@@ -42,8 +42,8 @@ class LogPersistenceService {
     return await openDatabase(
       path,
       version: 1,
-      onConfigure: (db) async {
-        await db.execute('PRAGMA journal_mode=WAL');
+      onOpen: (db) async {
+        await db.rawQuery('PRAGMA journal_mode=WAL');
       },
       onCreate: (db, version) async {
         await db.execute('''

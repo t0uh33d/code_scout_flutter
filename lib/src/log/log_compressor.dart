@@ -9,6 +9,9 @@ class LogCompressor {
   static Future<File> compress(List<Map<String, dynamic>> logs) async {
     final Uint8List gzipped = await compute(_compressInIsolate, logs);
     final dir = await getTemporaryDirectory();
+    if (!dir.existsSync()) {
+      await dir.create(recursive: true);
+    }
     final file = File(p.join(dir.path, 'cs_sync_${DateTime.now().millisecondsSinceEpoch}.tar.gz'));
     await file.writeAsBytes(gzipped);
     return file;

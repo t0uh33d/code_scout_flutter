@@ -1,11 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'dart:math' show Random;
 
 import 'package:code_scout/code_scout.dart';
 import 'package:code_scout/src/log/log_compressor.dart';
 import 'package:code_scout/src/log/log_persistence_service.dart';
-import 'package:http/http.dart' as http;
 
 class LogSyncWorker {
   static final LogSyncWorker i = LogSyncWorker._i();
@@ -125,17 +126,39 @@ class LogSyncWorker {
   Future<void> _uploadTarGz(
       String baseURL, File file, Map<String, String> headers) async {
     final uri = Uri.parse('${baseURL}api/logs/dump');
-    final request = http.MultipartRequest('POST', uri);
-    request.files.add(await http.MultipartFile.fromPath('file', file.path));
-    request.headers.addAll(headers);
+    final fileBytes = await file.readAsBytes();
+    final boundary =
+        '----CodeScout${DateTime.now().millisecondsSinceEpoch}${Random().nextInt(99999)}';
 
-    final response = await request.send();
+    // Build multipart body
+    final bodyParts = <List<int>>[];
+    bodyParts.add(utf8.encode('--$boundary\r\n'));
+    bodyParts.add(utf8.encode(
+        'Content-Disposition: form-data; name="file"; filename="data.tar.gz"\r\n'));
+    bodyParts.add(utf8.encode('Content-Type: application/gzip\r\n\r\n'));
+    bodyParts.add(fileBytes);
+    bodyParts.add(utf8.encode('\r\n--$boundary--\r\n'));
 
-    if (response.statusCode != 200) {
-      final body = await response.stream.bytesToString();
-      throw Exception(
-        'Upload failed (${response.statusCode}): $body',
-      );
+    final client = HttpClient();
+    try {
+      final request = await client.postUrl(uri);
+      request.headers.set('Content-Type', 'multipart/form-data; boundary=$boundary');
+      headers.forEach((k, v) => request.headers.set(k, v));
+
+      for (final part in bodyParts) {
+        request.add(part);
+      }
+
+      final response = await request.close();
+
+      if (response.statusCode != 200) {
+        final body = await response.transform(utf8.decoder).join();
+        throw Exception('Upload failed (${response.statusCode}): $body');
+      }
+      // Drain the response to free resources
+      await response.drain<void>();
+    } finally {
+      client.close();
     }
   }
 }

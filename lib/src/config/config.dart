@@ -1,7 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:code_scout/src/const/global_vars.dart';
-import 'package:http/http.dart' as http;
 
 import 'package:code_scout/src/log/log_entry.dart' show LogEntry;
 import 'package:code_scout/src/log/log_level.dart' show LogLevel;

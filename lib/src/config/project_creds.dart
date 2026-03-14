@@ -31,26 +31,22 @@ class ProjectCredentials {
     return headers;
   }
 
-  // String _hashSecret(String secret) {
-  //   final hmac = Hmac(sha256, utf8.encode(projectID));
-  //   return hex.encode(hmac.convert(utf8.encode(secret)).bytes);
-  // }
-
   bool? _credsValid;
 
   Future<bool> validateCredentials() async {
     if (_credsValid != null) return _credsValid!;
 
+    final client = HttpClient();
     try {
-      Uri uri = Uri.parse('${link}api/validate');
-      final response = await http.get(uri, headers: authHeaders);
-      if (response.statusCode == 200) {
-        _credsValid = true;
-      } else {
-        _credsValid = false;
-      }
+      final uri = Uri.parse('${link}api/validate');
+      final request = await client.getUrl(uri);
+      authHeaders.forEach((k, v) => request.headers.set(k, v));
+      final response = await request.close();
+      _credsValid = response.statusCode == 200;
     } catch (e) {
       _credsValid = false;
+    } finally {
+      client.close();
     }
 
     return _credsValid!;
