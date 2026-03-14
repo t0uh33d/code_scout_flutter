@@ -1,6 +1,6 @@
-# CLAUDE.md — Code Scout Flutter Package
+# Code Scout Flutter Package
 
-This file provides guidance to Claude Code when working with the `code_scout` Flutter package.
+This file provides guidance to AI coding agents when working with the `code_scout` Flutter package.
 
 ## Package Overview
 
@@ -8,7 +8,7 @@ This file provides guidance to Claude Code when working with the `code_scout` Fl
 
 **Package name:** `code_scout`
 **Version:** 1.0.0
-**Dart SDK:** ^3.5.0 | **Flutter:** >=1.17.0
+**Dart SDK:** ^3.11.0 | **Flutter:** >=3.0.0
 
 ## Commands
 
@@ -39,10 +39,10 @@ lib/
     │   ├── log_printer.dart             # CSxPrinter — console output formatting
     │   ├── ansi_color.dart              # ANSI color codes for console
     │   ├── log_persistence_service.dart # SQLite storage (code_scout.db)
-    │   ├── log_sync_worker.dart         # Periodic sync timer + HTTP upload
-    │   └── log_compressor.dart          # JSON → tar.gz compression
+    │   ├── log_sync_worker.dart         # Periodic sync timer + dart:io upload
+    │   └── log_compressor.dart          # JSON → tar.gz compression (via isolate)
     ├── network/
-    │   ├── network_manager.dart         # NetworkManager.i singleton
+    │   ├── network_manager.dart         # NetworkManager.i singleton (TTL-based cleanup)
     │   ├── network_request.dart         # NetworkRequestData model
     │   ├── network_response.dart        # NetworkResponseData model
     │   ├── network_error_data.dart      # NetworkErrorData model
@@ -61,15 +61,17 @@ lib/
 ## Key Patterns
 
 - **Singletons everywhere:** `CodeScout.instance`, `NetworkManager.i`, `LogPersistenceService.i`, `OverlayManager.i`, `LogSyncWorker.i`
-- **Log data flow:** `CodeScout.log()` → `LogEntry.processLogEntry()` → `CSxPrinter` (console) + `LogPersistenceService` (SQLite) → `LogSyncWorker` (periodic) → `LogCompressor` (tar.gz) → HTTP POST to server
-- **Network interception:** Users create interceptors (Dio/HTTP) that call `NetworkManager.i.processNetworkRequest/Response/Error()`. Each network call gets a unique `requestId` to correlate request→response→error phases.
+- **Log data flow:** `CodeScout.log()` (fire-and-forget) or `CodeScout.logMessage()` (awaitable) → `LogEntry.processLogEntry()` → `CSxPrinter` (console) + `LogPersistenceService` (SQLite) → `LogSyncWorker` (periodic) → `LogCompressor` (tar.gz in isolate) → `dart:io` HTTP POST to server
+- **Network interception:** Users create interceptors (Dio/HTTP) in their own code that call `NetworkManager.i.processNetworkRequest/Response/Error()`. Each network call gets a unique `requestId` to correlate request→response→error phases. Stale requests are evicted after 2 minutes.
 - **Configuration:** All behavior controlled via `CodeScoutConfiguration` passed to `CodeScout.instance.init()`. Includes `LoggingBehavior` (filtering), `LogSyncBehavior` (timing), `ProjectCredentials` (server auth), `RealTimeConfig`.
+- **Zero HTTP dependency:** All server communication uses `dart:io` `HttpClient` directly — no `http` or `dio` in the core package.
+- **Sync atomicity:** Logs are marked `sync_status=1` before upload, rolled back on failure, deleted on success. Concurrent syncs are prevented via a `_syncing` guard.
 
 ## Public API Surface
 
 ### Initialization
 ```dart
-CodeScout.instance.init(
+await CodeScout.instance.init(
   freshContextFetcher: () => context,
   configuration: CodeScoutConfiguration(
     logging: LoggingBehavior(minimumLevel: LogLevel.all),
@@ -85,20 +87,27 @@ CodeScout.instance.init(
 
 ### Logging
 ```dart
+// Fire-and-forget (never throws)
 CodeScout.instance.log(
   level: LogLevel.info,
   message: 'Something happened',
   tags: {'network', 'auth'},
   metadata: {'userId': '123'},
 );
+
+// Awaitable (propagates errors)
+await CodeScout.instance.logMessage(
+  level: LogLevel.error,
+  message: 'Critical failure',
+);
 ```
 
 ### Network Interception
 ```dart
-// Dio — add interceptor
+// Dio — add interceptor (defined in your app, not in package)
 dio.interceptors.add(CodeScoutDioInterceptor());
 
-// HTTP — wrap client
+// HTTP — wrap client (defined in your app, not in package)
 final client = CodeScoutHttpClient(client: http.Client());
 ```
 
@@ -107,6 +116,11 @@ final client = CodeScoutHttpClient(client: http.Client());
 CodeScout.instance.showIcon();
 CodeScout.instance.hideIcon();
 CodeScout.instance.toggleIcon();
+```
+
+### Cleanup
+```dart
+await CodeScout.instance.dispose();
 ```
 
 ## SQLite Schema (logs table)
@@ -122,9 +136,10 @@ CREATE TABLE logs (
   metadata TEXT,             -- JSON map
   tags TEXT,                 -- JSON array
   timestamp TEXT,            -- ISO-8601
-  is_network_call INTEGER DEFAULT 0,
+  is_network_call INTEGER NOT NULL DEFAULT 0,
   request_id TEXT,
-  call_phase TEXT            -- request|response|error
+  call_phase TEXT,           -- request|response|error
+  sync_status INTEGER NOT NULL DEFAULT 0  -- 0=pending, 1=syncing
 );
 ```
 
@@ -133,7 +148,8 @@ CREATE TABLE logs (
 - **Auth headers:** `X-Project-ID` and `X-Project-Secret` on every request
 - **Credential validation:** `GET {link}api/validate`
 - **Log upload:** `POST {link}api/logs/dump` — multipart form with `file` field containing `data.tar.gz`
-- **Compression:** JSON array → tar archive (`data.json`) → gzip → `data.tar.gz`
+- **Compression:** JSON array → tar archive (`data.json`) → gzip → `data.tar.gz` (runs in background isolate)
+- **All HTTP via `dart:io`** — no third-party HTTP packages in core
 
 ## What's Implemented vs TODO
 
@@ -142,7 +158,7 @@ CREATE TABLE logs (
 - Network request/response/error capture with request ID correlation
 - Dio interceptor and HTTP client wrapper (in example/)
 - Tag-based and level-based log filtering
-- Batch compression and upload
+- Batch compression and upload (with retry and backoff)
 - Floating overlay button
 - Socket connection establishment
 
