@@ -1,6 +1,10 @@
 # code_scout_http
 
+[![pub.dev](https://img.shields.io/pub/v/code_scout_http.svg)](https://pub.dev/packages/code_scout_http)
+
 HTTP client wrapper for [Code Scout](https://codescout.tech). Automatically captures network requests, responses, and errors.
+
+Part of the [Code Scout](https://pub.dev/packages/code_scout) ecosystem.
 
 ## Getting Started
 

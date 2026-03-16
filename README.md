@@ -7,7 +7,14 @@
 </p>
 
 <p align="center">
+  <a href="https://pub.dev/packages/code_scout"><img src="https://img.shields.io/pub/v/code_scout.svg" alt="pub.dev"></a>
+  <a href="https://pub.dev/packages/code_scout_dio"><img src="https://img.shields.io/pub/v/code_scout_dio.svg?label=code_scout_dio" alt="code_scout_dio"></a>
+  <a href="https://pub.dev/packages/code_scout_http"><img src="https://img.shields.io/pub/v/code_scout_http.svg?label=code_scout_http" alt="code_scout_http"></a>
+</p>
+
+<p align="center">
   <a href="https://codescout.tech">Website</a> &middot;
+  <a href="https://pub.dev/packages/code_scout">pub.dev</a> &middot;
   <a href="https://github.com/t0uh33d/code_scout_flutter">GitHub</a> &middot;
   <a href="https://github.com/t0uh33d/code_scout">Server</a>
 </p>
@@ -26,21 +33,29 @@ Capture logs and network calls locally, then sync them to a self-hosted [Code Sc
 - **Floating overlay** for quick access to connection controls during development
 - **Lightweight** — designed to add minimal overhead to your app
 
+## Packages
+
+| Package | Description | pub.dev |
+|---------|-------------|---------|
+| [code_scout](https://pub.dev/packages/code_scout) | Core logging SDK | [![pub.dev](https://img.shields.io/pub/v/code_scout.svg)](https://pub.dev/packages/code_scout) |
+| [code_scout_dio](https://pub.dev/packages/code_scout_dio) | Dio interceptor | [![pub.dev](https://img.shields.io/pub/v/code_scout_dio.svg)](https://pub.dev/packages/code_scout_dio) |
+| [code_scout_http](https://pub.dev/packages/code_scout_http) | HTTP client wrapper | [![pub.dev](https://img.shields.io/pub/v/code_scout_http.svg)](https://pub.dev/packages/code_scout_http) |
+
 ## Getting Started
 
-Add `code_scout` to your `pubspec.yaml`:
+Install the core package:
 
 ```bash
 flutter pub add code_scout
 ```
 
-If you need network interception, add the companion package for your HTTP client:
+For network interception, add the companion package for your HTTP client:
 
 ```bash
-# For Dio
+# For Dio users
 flutter pub add code_scout_dio
 
-# For http
+# For http users
 flutter pub add code_scout_http
 ```
 

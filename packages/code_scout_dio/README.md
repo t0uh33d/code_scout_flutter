@@ -1,6 +1,10 @@
 # code_scout_dio
 
+[![pub.dev](https://img.shields.io/pub/v/code_scout_dio.svg)](https://pub.dev/packages/code_scout_dio)
+
 Dio interceptor for [Code Scout](https://codescout.tech). Automatically captures network requests, responses, and errors.
+
+Part of the [Code Scout](https://pub.dev/packages/code_scout) ecosystem.
 
 ## Getting Started
 

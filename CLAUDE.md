@@ -7,8 +7,20 @@ This file provides guidance to AI coding agents when working with the `code_scou
 `code_scout` is a Flutter SDK that captures application logs and network requests, stores them locally in SQLite, and periodically syncs them to a remote Code Scout server via compressed tar.gz uploads.
 
 **Package name:** `code_scout`
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Dart SDK:** ^3.11.0 | **Flutter:** >=3.0.0
+**Published:** [pub.dev/packages/code_scout](https://pub.dev/packages/code_scout)
+
+### Companion Packages
+
+Network interception is provided via separate companion packages to keep the core SDK dependency-free:
+
+| Package | Purpose | pub.dev |
+|---------|---------|---------|
+| `code_scout_dio` | Dio interceptor — `CodeScoutDioInterceptor` | [pub.dev/packages/code_scout_dio](https://pub.dev/packages/code_scout_dio) |
+| `code_scout_http` | HTTP client wrapper — `CodeScoutHttpClient` | [pub.dev/packages/code_scout_http](https://pub.dev/packages/code_scout_http) |
+
+These live in `packages/code_scout_dio/` and `packages/code_scout_http/` within this repo. Their pubspecs depend on `code_scout: ^1.0.0` (hosted). The example app uses `dependency_overrides` to resolve the path dep for local development.
 
 ## Commands
 
@@ -56,13 +68,19 @@ lib/
     │   └── stack_trace_parser.dart      # StackTraceParser + StackCallDetails
     └── const/
         └── global_vars.dart             # Global variables
+
+packages/
+├── code_scout_dio/
+│   └── lib/code_scout_dio.dart          # CodeScoutDioInterceptor (single file)
+└── code_scout_http/
+    └── lib/code_scout_http.dart         # CodeScoutHttpClient (single file)
 ```
 
 ## Key Patterns
 
 - **Singletons everywhere:** `CodeScout.instance`, `NetworkManager.i`, `LogPersistenceService.i`, `OverlayManager.i`, `LogSyncWorker.i`
-- **Log data flow:** `CodeScout.log()` (fire-and-forget) or `CodeScout.logMessage()` (awaitable) → `LogEntry.processLogEntry()` → `CSxPrinter` (console) + `LogPersistenceService` (SQLite) → `LogSyncWorker` (periodic) → `LogCompressor` (tar.gz in isolate) → `dart:io` HTTP POST to server
-- **Network interception:** Users create interceptors (Dio/HTTP) in their own code that call `NetworkManager.i.processNetworkRequest/Response/Error()`. Each network call gets a unique `requestId` to correlate request→response→error phases. Stale requests are evicted after 2 minutes.
+- **Log data flow:** `CodeScout.d()` / `.log()` / `.logMessage()` → `LogEntry.processLogEntry()` → `CSxPrinter` (console) + `LogPersistenceService` (SQLite) → `LogSyncWorker` (periodic) → `LogCompressor` (tar.gz in isolate) → `dart:io` HTTP POST to server
+- **Network interception:** Companion packages (`code_scout_dio`, `code_scout_http`) call `NetworkManager.i.processNetworkRequest/Response/Error()`. Each network call gets a unique `requestId` to correlate request→response→error phases. Stale requests are evicted after 2 minutes.
 - **Configuration:** All behavior controlled via `CodeScoutConfiguration` passed to `CodeScout.instance.init()`. Includes `LoggingBehavior` (filtering), `LogSyncBehavior` (timing), `ProjectCredentials` (server auth), `RealTimeConfig`.
 - **Zero HTTP dependency:** All server communication uses `dart:io` `HttpClient` directly — no `http` or `dio` in the core package.
 - **Sync atomicity:** Logs are marked `sync_status=1` before upload, rolled back on failure, deleted on success. Concurrent syncs are prevented via a `_syncing` guard.
@@ -87,7 +105,16 @@ await CodeScout.instance.init(
 
 ### Logging
 ```dart
-// Fire-and-forget (never throws)
+// Level-specific shorthand methods (fire-and-forget, never throws)
+final scout = CodeScout.instance;
+scout.v('Verbose trace data');
+scout.d('Debug info');
+scout.i('User signed in', tags: {'auth'});
+scout.w('Cache miss', metadata: {'key': 'prefs'});
+scout.e('Payment failed', error: e, stackTrace: st);
+scout.f('Unrecoverable state');
+
+// Full form (when level is dynamic)
 CodeScout.instance.log(
   level: LogLevel.info,
   message: 'Something happened',
@@ -104,10 +131,12 @@ await CodeScout.instance.logMessage(
 
 ### Network Interception
 ```dart
-// Dio — add interceptor (defined in your app, not in package)
+// Dio — install code_scout_dio package
+import 'package:code_scout_dio/code_scout_dio.dart';
 dio.interceptors.add(CodeScoutDioInterceptor());
 
-// HTTP — wrap client (defined in your app, not in package)
+// HTTP — install code_scout_http package
+import 'package:code_scout_http/code_scout_http.dart';
 final client = CodeScoutHttpClient(client: http.Client());
 ```
 
@@ -155,18 +184,18 @@ CREATE TABLE logs (
 
 ### Working
 - Full logging pipeline (capture → console → SQLite → sync)
+- Level-specific shorthand methods (`.v()`, `.d()`, `.i()`, `.w()`, `.e()`, `.f()`)
 - Network request/response/error capture with request ID correlation
-- Dio interceptor and HTTP client wrapper (in example/)
+- Dio interceptor (`code_scout_dio` package) and HTTP client wrapper (`code_scout_http` package)
 - Tag-based and level-based log filtering
 - Batch compression and upload (with retry and backoff)
 - Floating overlay button
 - Socket connection establishment
+- Published on pub.dev
 
 ### Incomplete / TODO
 - Socket-based real-time log streaming (connection works, no data transmission)
 - Device info capture (`captureDeviceInfo` config exists but not implemented)
 - App context capture (`captureAppContext` config exists but not implemented)
 - Menu UI controls for log type toggling (checkboxes commented out)
-- Built-in interceptors (Dio/HTTP interceptors are only in example/, not in package)
 - Tests
-- pub.dev documentation and example cleanup
