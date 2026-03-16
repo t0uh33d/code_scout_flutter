@@ -2,7 +2,7 @@ name: code_scout_http
 description: 'HTTP client wrapper for Code Scout. Automatically captures network requests, responses, and errors.'
 version: 1.0.0
 homepage: https://codescout.tech
-repository: https://github.com/t0uh33d/code_scout_flutter
+repository: https://github.com/t0uh33d/code_scout_flutter/tree/main/packages/code_scout_http
 
 environment:
   sdk: ^3.11.0
