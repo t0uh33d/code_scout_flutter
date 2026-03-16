@@ -30,17 +30,18 @@ Capture logs and network calls locally, then sync them to a self-hosted [Code Sc
 
 Add `code_scout` to your `pubspec.yaml`:
 
-```yaml
-dependencies:
-  code_scout:
-    git:
-      url: https://github.com/t0uh33d/code_scout_flutter.git
+```bash
+flutter pub add code_scout
 ```
 
-Then run:
+If you need network interception, add the companion package for your HTTP client:
 
 ```bash
-flutter pub get
+# For Dio
+flutter pub add code_scout_dio
+
+# For http
+flutter pub add code_scout_http
 ```
 
 ## Usage
@@ -71,8 +72,22 @@ await CodeScout.instance.init(
 
 ### Log messages
 
+Use the shorthand methods for quick logging:
+
 ```dart
-// Fire-and-forget (never throws, safe to call anywhere)
+final scout = CodeScout.instance;
+
+scout.d('Fetching user profile');                       // debug
+scout.i('User signed in', tags: {'auth'});              // info
+scout.w('Cache miss', metadata: {'key': 'user_prefs'}); // warning
+scout.e('Payment failed', error: e, stackTrace: st);    // error
+scout.f('Unrecoverable state');                          // fatal
+scout.v('Detailed trace data');                          // verbose
+```
+
+You can also use the full form when you need to specify the level dynamically:
+
+```dart
 CodeScout.instance.log(
   level: LogLevel.info,
   message: 'User signed in',
@@ -91,21 +106,40 @@ await CodeScout.instance.logMessage(
 
 ### Capture network calls
 
-Code Scout doesn't bundle Dio or `http` as dependencies. Instead, create thin interceptors in your own code. See the [example/](example/) folder for ready-to-use implementations:
+Network interception is provided through separate companion packages so the core SDK stays dependency-free. Each package is a one-liner to set up.
 
-**Dio:**
+#### Dio
+
+Add `code_scout_dio` to your dependencies, then attach the interceptor:
 
 ```dart
+import 'package:code_scout_dio/code_scout_dio.dart';
+
+final dio = Dio();
 dio.interceptors.add(CodeScoutDioInterceptor());
 ```
 
-**http:**
+Every request, response, and error flowing through this Dio instance will be automatically captured.
+
+#### http
+
+Add `code_scout_http` to your dependencies, then wrap your client:
 
 ```dart
+import 'package:code_scout_http/code_scout_http.dart';
+import 'package:http/http.dart' as http;
+
 final client = CodeScoutHttpClient(client: http.Client());
+
+// Use it like a normal http.Client
+final response = await client.get(Uri.parse('https://api.example.com/data'));
 ```
 
-Both interceptors call `NetworkManager.i.processNetworkRequest/Response/Error()` under the hood, which logs each phase with a shared `requestId` for correlation.
+`CodeScoutHttpClient` extends `http.BaseClient`, so it's a drop-in replacement anywhere you use `http.Client`.
+
+#### How it works
+
+Both interceptors call `NetworkManager.i.processNetworkRequest/Response/Error()` under the hood. Each network call gets a unique `requestId` that correlates the request, response, and error phases together, giving you a complete picture of every API call.
 
 ### Overlay controls
 

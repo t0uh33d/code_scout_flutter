@@ -76,7 +76,7 @@ class CodeScout {
 
   Future<void> logMessage({
     required LogLevel level,
-    required dynamic message,
+    required String message,
     dynamic error,
     StackTrace? stackTrace,
     Set<String>? tags,
@@ -84,7 +84,7 @@ class CodeScout {
   }) async {
     LogEntry logEntry = LogEntry(
       level: level,
-      message: message is String ? message : message.toString(),
+      message: message,
       error: error,
       stackTrace: stackTrace,
       tags: tags,
@@ -100,7 +100,7 @@ class CodeScout {
   /// to await persistence.
   void log({
     required LogLevel level,
-    required dynamic message,
+    required String message,
     dynamic error,
     StackTrace? stackTrace,
     Set<String>? tags,
@@ -118,6 +118,34 @@ class CodeScout {
       dev.log('CodeScout: log failed: $e', stackTrace: st);
     });
   }
+
+  // ---------------------------------------------------------------------------
+  // Level-specific shorthand methods
+  // ---------------------------------------------------------------------------
+
+  /// Log a verbose message.
+  void v(String message, {dynamic error, StackTrace? stackTrace, Set<String>? tags, Map<String, dynamic>? metadata}) =>
+      log(level: LogLevel.verbose, message: message, error: error, stackTrace: stackTrace, tags: tags, metadata: metadata);
+
+  /// Log a debug message.
+  void d(String message, {dynamic error, StackTrace? stackTrace, Set<String>? tags, Map<String, dynamic>? metadata}) =>
+      log(level: LogLevel.debug, message: message, error: error, stackTrace: stackTrace, tags: tags, metadata: metadata);
+
+  /// Log an info message.
+  void i(String message, {dynamic error, StackTrace? stackTrace, Set<String>? tags, Map<String, dynamic>? metadata}) =>
+      log(level: LogLevel.info, message: message, error: error, stackTrace: stackTrace, tags: tags, metadata: metadata);
+
+  /// Log a warning message.
+  void w(String message, {dynamic error, StackTrace? stackTrace, Set<String>? tags, Map<String, dynamic>? metadata}) =>
+      log(level: LogLevel.warning, message: message, error: error, stackTrace: stackTrace, tags: tags, metadata: metadata);
+
+  /// Log an error message.
+  void e(String message, {dynamic error, StackTrace? stackTrace, Set<String>? tags, Map<String, dynamic>? metadata}) =>
+      log(level: LogLevel.error, message: message, error: error, stackTrace: stackTrace, tags: tags, metadata: metadata);
+
+  /// Log a fatal message.
+  void f(String message, {dynamic error, StackTrace? stackTrace, Set<String>? tags, Map<String, dynamic>? metadata}) =>
+      log(level: LogLevel.fatal, message: message, error: error, stackTrace: stackTrace, tags: tags, metadata: metadata);
 
   Future<void> dispose() async {
     LogSyncWorker.i.stop();

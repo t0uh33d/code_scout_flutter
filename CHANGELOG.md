@@ -1,3 +1,9 @@
+## 1.1.0
+
+* Added level-specific shorthand methods (`.v()`, `.d()`, `.i()`, `.w()`, `.e()`, `.f()`)
+* Changed `message` parameter type from `dynamic` to `String` for a cleaner API contract
+* Added companion packages for network interception: `code_scout_dio` and `code_scout_http`
+
 ## 1.0.0
 
 * Initial release

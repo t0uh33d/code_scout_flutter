@@ -1,0 +1,20 @@
+name: code_scout_dio
+description: 'Dio interceptor for Code Scout. Automatically captures network requests, responses, and errors.'
+version: 1.0.0
+homepage: https://codescout.tech
+repository: https://github.com/t0uh33d/code_scout_flutter
+
+environment:
+  sdk: ^3.11.0
+  flutter: '>=3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  code_scout: ^1.0.0
+  dio: '>=5.0.0 <7.0.0'
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
