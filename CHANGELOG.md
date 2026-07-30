@@ -3,6 +3,11 @@
 - **Fix:** logging or network capture before `CodeScout.instance.init()` no longer
   throws `LateInitializationError` into the caller — configuration and session id
   now have safe defaults, and `NetworkManager` capture is a no-op until init.
+- **Fix:** network error logs now carry the `network` tag, matching the request and
+  response phases. Previously `enabledTags: {'network'}` silently dropped them.
+- **Behaviour change:** narrowing `enabledTags` no longer discards untagged logs.
+  The allowlist now narrows tagged logs only; set `allowUntagged: false` for the
+  previous behaviour. Use `minimumLevel` to control overall volume.
 
 ## 1.1.0
 

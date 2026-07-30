@@ -1,7 +1,16 @@
 part of 'config.dart';
 
 class LoggingBehavior {
+  /// Tags allowed through to capture. `{'*'}` allows every tag.
+  ///
+  /// This narrows *tagged* logs only — untagged logs are unaffected unless
+  /// [allowUntagged] is false. Use [minimumLevel] to control overall volume.
   final Set<String> enabledTags;
+
+  /// Whether logs carrying no tags are captured. Set false to capture only
+  /// logs matching [enabledTags].
+  final bool allowUntagged;
+
   final LogLevel minimumLevel;
   final bool captureDeviceInfo;
   final bool captureAppContext;
@@ -9,7 +18,8 @@ class LoggingBehavior {
   final bool includeCurrentStackTrace;
 
   LoggingBehavior({
-    this.enabledTags = const {'*'}, // Wildcard for all tags
+    this.enabledTags = const {'*'},
+    this.allowUntagged = true,
     this.minimumLevel = LogLevel.info,
     this.captureDeviceInfo = true,
     this.captureAppContext = true,
@@ -18,9 +28,11 @@ class LoggingBehavior {
   });
 
   bool shouldLog(LogEntry entry) {
-    final levelAllowed = entry.level.value >= minimumLevel.value;
-    final tagAllowed = enabledTags.contains('*') ||
-        (entry.tags != null && entry.tags!.any(enabledTags.contains));
-    return levelAllowed && tagAllowed;
+    if (entry.level.value < minimumLevel.value) return false;
+    if (enabledTags.contains('*')) return true;
+
+    final tags = entry.tags;
+    if (tags == null || tags.isEmpty) return allowUntagged;
+    return tags.any(enabledTags.contains);
   }
 }

@@ -63,6 +63,7 @@ class NetworkErrorData extends NetworkData {
       stackTrace: stackTrace,
       requestId: _request?.requestID,
       callPhase: NetworkCallPhase.error,
+      tags: {'network'},
       metadata: toMap(),
     );
 
