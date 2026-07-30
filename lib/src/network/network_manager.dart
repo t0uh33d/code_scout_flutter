@@ -49,12 +49,17 @@ class NetworkManager {
   }
 
   void processNetworkRequest(NetworkRequestData request) {
+    // Telemetry degrades to silence before init — never fail the caller.
+    if (!CodeScout.instance.isInitialized) return;
+
     _requests[request.requestID] = _TimedRequest(request);
 
     request.logEntry.processLogEntry(networkData: request);
   }
 
   void processNetworkResponse(NetworkResponseData response, String reqID) {
+    if (!CodeScout.instance.isInitialized) return;
+
     final timed = _requests.remove(reqID);
     if (timed == null) {
       log('CodeScout: No matching request for response $reqID');
@@ -66,6 +71,8 @@ class NetworkManager {
   }
 
   void processNetworkError(NetworkErrorData error, String reqID) {
+    if (!CodeScout.instance.isInitialized) return;
+
     final timed = _requests.remove(reqID);
     if (timed == null) {
       log('CodeScout: No matching request for error $reqID');

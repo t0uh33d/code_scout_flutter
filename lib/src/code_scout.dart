@@ -26,9 +26,12 @@ class CodeScout {
   FreshContextFetcher? fetcher;
   final OverlayManager _overlayManager = OverlayManager();
 
-  late CodeScoutConfiguration _configuration;
+  // Not `late`: interceptors and log calls may fire before init(), and an
+  // observability library must never crash the app it observes. init()
+  // replaces both with the real values.
+  CodeScoutConfiguration _configuration = CodeScoutConfiguration();
 
-  late String _currentSessionId;
+  String _currentSessionId = const Uuid().v4();
 
   String get currentSessionId => _currentSessionId;
 

@@ -1,3 +1,9 @@
+## 1.1.1
+
+- **Fix:** logging or network capture before `CodeScout.instance.init()` no longer
+  throws `LateInitializationError` into the caller — configuration and session id
+  now have safe defaults, and `NetworkManager` capture is a no-op until init.
+
 ## 1.1.0
 
 * Added level-specific shorthand methods (`.v()`, `.d()`, `.i()`, `.w()`, `.e()`, `.f()`)
