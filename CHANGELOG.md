@@ -1,5 +1,14 @@
 ## 1.2.0
 
+- **New:** the in-app overlay is now a real log viewer. Tapping the floating
+  button opens a sheet with **Logs**, **Network** and **Session** tabs: level
+  and tag filters, rows that expand to their error, stack trace and metadata,
+  network phases paired into one row per call, and the session details you get
+  asked for in a bug report. It reads an in-memory buffer of the current launch,
+  so it works identically with no server configured.
+- **Removed:** the overlay's raw IP/port/identifier socket form, and with it the
+  `provider` dependency. It was superseded by the pairing-code flow coming with
+  live streaming, and nothing referenced it any more.
 - **New:** every app launch is now recorded as a session, carrying the device
   model, OS name and version, your app's version and build number, and a random
   installation id that is stable for the life of the install. The dashboard uses

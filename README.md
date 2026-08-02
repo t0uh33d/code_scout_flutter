@@ -31,7 +31,7 @@ Capture logs and network calls locally, then sync them to a self-hosted [Code Sc
 - **Local persistence** in SQLite so logs survive app restarts
 - **Automatic batch sync** — compresses logs to tar.gz and uploads on a configurable interval
 - **Zero third-party HTTP deps** — all server communication uses `dart:io`
-- **Floating overlay** for quick access to connection controls during development
+- **In-app overlay** — read your logs and network calls on the device, with no server needed at all
 - **Lightweight** — designed to add minimal overhead to your app
 
 ## Packages
@@ -188,7 +188,15 @@ Alongside the id and the user, each session carries the device it ran on and the
 
 The installation id is what lets the dashboard group launches by phone. It is generated locally, carries nothing personal, and goes away when the app is uninstalled. Set `captureDeviceInfo: false` or `captureAppContext: false` on `LoggingBehavior` to leave either group out.
 
-### Overlay controls
+### The in-app overlay
+
+A floating button draws over your app. Tapping it opens a sheet with three tabs:
+
+- **Logs** — everything this launch has logged, newest first, with the same level and tag filters the dashboard has. Tap a row to see its error, stack trace and metadata.
+- **Network** — request, response and error paired into one row per call, with the status and how long it took.
+- **Session** — the session id, installation id, device, app version and user. Long-press any of them to copy, which is what you want when filing a bug.
+
+It reads an in-memory buffer of the current launch rather than the server, so **it works with no server configured at all**. Drop the package in, tap the button, read your logs.
 
 ```dart
 CodeScout.instance.showIcon();   // Show floating button

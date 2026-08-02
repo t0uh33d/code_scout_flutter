@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:code_scout/code_scout.dart';
+import 'package:code_scout/src/csx_interface/log_buffer.dart';
 import 'package:code_scout/src/log/log_persistence_service.dart';
 import 'package:code_scout/src/log/log_printer.dart';
 import 'package:code_scout/src/utils/stack_trace_parser.dart';
@@ -91,6 +92,11 @@ class LogEntry {
 
       CSxPrinter printer = CSxPrinter(this);
       printer.printToConsole(networkData: networkData);
+
+      // The on-device overlay reads this, not the table: rows are deleted from
+      // SQLite as soon as they upload, so the overlay would empty out behind
+      // you with a server configured.
+      LogBuffer.i.add(this);
 
       await LogPersistenceService.i.saveLogEntry(this);
     } catch (e, st) {

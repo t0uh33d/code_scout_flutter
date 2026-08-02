@@ -61,8 +61,9 @@ lib/
     │   └── network_data.dart            # NetworkData union type
     ├── csx_interface/
     │   ├── overlay_manager.dart         # Floating button overlay
-    │   ├── menu.dart                    # CSxInterface bottom sheet widget
-    │   └── controller.dart              # CSxInterfaceController (socket connection)
+    │   ├── menu.dart                    # CSxInterface sheet — Logs/Network/Session tabs
+    │   ├── log_buffer.dart              # LogBuffer — capped in-memory ring the overlay reads
+    │   └── overlay_theme.dart           # The dashboard's palette, for the overlay
     ├── session/
     │   ├── session_record.dart      # SessionRecord — one launch, wire + row shapes
     │   └── device_profile.dart      # Device model, OS, app version via the plus plugins
@@ -218,11 +219,9 @@ Sessions outlive their logs by one step: a batch sends the session records its l
 - Sessions: every launch recorded with device model, OS, app version/build, and a stable installation id
 - `setUser(id, traits:)` — opt-in identity, re-sent with every batch so a mid-session call still lands
 - Device and app context capture (`captureDeviceInfo` / `captureAppContext` are honoured)
-- Floating overlay button
-- Socket connection establishment
+- In-app overlay: Logs, Network and Session tabs, reading a capped in-memory buffer so it works with no server configured
 - Published on pub.dev
 
 ### Incomplete / TODO
-- Socket-based real-time log streaming (connection works, no data transmission)
-- Menu UI controls for log type toggling (checkboxes commented out)
+- Real-time log streaming and the overlay's pairing-code screen (the socket protocol is defined; there is no server for it yet)
 - Tests

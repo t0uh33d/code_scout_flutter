@@ -62,11 +62,19 @@ class OverlayManager {
 
   Future<dynamic> _bottomSheet(BuildContext context) {
     return showModalBottomSheet(
-      // useRootNavigator: true,
-      enableDrag: false,
       context: context,
+      // The sheet is a log viewer, not a menu: without isScrollControlled it is
+      // capped at half the screen and its list gets a few rows to work with.
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      enableDrag: true,
       showDragHandle: false,
-      isDismissible: false,
+      // Tapping the dimmed app behind it closes the sheet, which is what every
+      // other sheet on the platform does.
+      isDismissible: true,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
       builder: (context) {
         return const CSxInterface();
       },
