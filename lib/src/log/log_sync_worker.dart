@@ -83,8 +83,14 @@ class LogSyncWorker {
       // Mark logs as syncing so concurrent cycles don't pick them up
       await LogPersistenceService.i.markAsSyncing(logIds);
 
+      // The session records these logs belong to. Not just the current launch:
+      // a batch can carry logs from a previous one that was killed before it
+      // could sync, and those need their session sent too or they arrive with
+      // no device and no user attached.
+      final sessions = await _sessionsFor(logs);
+
       // Compress
-      file = await LogCompressor.compress(logs);
+      file = await LogCompressor.compress(logs, sessions);
 
       // Upload with timeout
       await _uploadTarGz(creds.link, file, creds.authHeaders)
@@ -92,6 +98,12 @@ class LogSyncWorker {
 
       // Success — delete the logs from DB
       await LogPersistenceService.i.deleteLogEntries(logIds);
+
+      // Session records outlive their logs by one step, so this is where the
+      // finished ones go. The current launch is kept: it has no logs left this
+      // instant, but it is still running.
+      await LogPersistenceService.i
+          .pruneSessions(CodeScout.instance.currentSessionId);
 
       _consecutiveFailures = 0;
     } catch (e, st) {
@@ -121,6 +133,29 @@ class LogSyncWorker {
       } catch (_) {}
       _syncing = false;
     }
+  }
+
+  /// The distinct sessions a batch of logs refers to, as wire JSON.
+  ///
+  /// A missing record is not an error worth failing the upload over — the logs
+  /// still carry their session id, so the dashboard has a row either way, just
+  /// without the device on it.
+  Future<List<Map<String, dynamic>>> _sessionsFor(
+      List<Map<String, dynamic>> logs) async {
+    final ids = <String>{};
+    for (final entry in logs) {
+      final id = entry['session_id'];
+      if (id is String && id.isNotEmpty) ids.add(id);
+    }
+    if (ids.isEmpty) return const [];
+
+    // Keep the current launch's record current: this is the only place
+    // last_seen_at moves, and it is what makes "live 2m ago" mean anything.
+    await CodeScout.instance.touchSession();
+
+    final sessions =
+        await LogPersistenceService.i.getSessionsByIds(ids.toList());
+    return sessions.map((s) => s.toJson()).toList();
   }
 
   Future<void> _uploadTarGz(

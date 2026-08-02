@@ -7,6 +7,8 @@ import 'package:code_scout/src/csx_interface/overlay_manager.dart';
 import 'package:code_scout/src/log/log_entry.dart';
 import 'package:code_scout/src/log/log_persistence_service.dart';
 import 'package:code_scout/src/log/log_sync_worker.dart';
+import 'package:code_scout/src/session/device_profile.dart';
+import 'package:code_scout/src/session/session_record.dart';
 import 'package:flutter/material.dart' show BuildContext;
 import 'package:uuid/uuid.dart';
 
@@ -34,6 +36,12 @@ class CodeScout {
   String _currentSessionId = const Uuid().v4();
 
   String get currentSessionId => _currentSessionId;
+
+  /// The record for this launch. Null until [init] has stored it — logging
+  /// works regardless, since every log carries its own session id.
+  SessionRecord? _session;
+
+  SessionRecord? get currentSession => _session;
 
   CodeScoutConfiguration get configuration => _configuration;
 
@@ -71,9 +79,83 @@ class CodeScout {
 
     _isInitialized = true;
 
+    await _startSession();
+
     if (_configuration.projectCredentials != null &&
         await _configuration.projectCredentials!.valid == true) {
       LogSyncWorker.i.start();
+    }
+  }
+
+  /// Records this launch: which install it is, what it is running on, and when
+  /// it started.
+  ///
+  /// Failing here must never fail init. Logs carry their session id whether or
+  /// not this row exists, so the worst case is a dashboard row that says
+  /// "Unknown device" — which is a great deal better than an app that will not
+  /// start because a platform channel did not answer.
+  Future<void> _startSession() async {
+    final now = DateTime.now().toUtc();
+    _session = SessionRecord(id: _currentSessionId, startedAt: now, lastSeenAt: now);
+
+    try {
+      final installationId = await LogPersistenceService.i.installationId();
+      final profile = await DeviceProfile.collect(
+        captureDevice: _configuration.logging.captureDeviceInfo,
+        captureApp: _configuration.logging.captureAppContext,
+      );
+      _session = _session!.copyWith(
+        installationId: installationId,
+        profile: profile,
+      );
+      await LogPersistenceService.i.saveSession(_session!);
+    } catch (e, st) {
+      dev.log('CodeScout: could not record the session: $e', stackTrace: st);
+    }
+  }
+
+  /// Names the person using the app. Identity is opt-in and is never inferred,
+  /// so nothing appears against a session until this is called.
+  ///
+  /// [id] is stored and never parsed — hash it first if you would rather Code
+  /// Scout never held the real thing. [traits] are attached to this session
+  /// rather than to the person, because what matters while debugging is what
+  /// was true when it broke.
+  ///
+  /// Safe to call at any point in a launch. The session record is re-sent with
+  /// every batch, so a call made ten minutes in reaches the dashboard on the
+  /// next sync.
+  Future<void> setUser(String? id, {Map<String, dynamic>? traits}) async {
+    final session = _session;
+    if (session == null) return;
+
+    _session = session.copyWith(
+      userId: id,
+      clearUser: id == null,
+      metadata: traits,
+      clearMetadata: traits == null && id == null,
+      lastSeenAt: DateTime.now().toUtc(),
+    );
+
+    try {
+      await LogPersistenceService.i.saveSession(_session!);
+    } catch (e, st) {
+      dev.log('CodeScout: could not store the user: $e', stackTrace: st);
+    }
+  }
+
+  /// Moves this launch's last-seen to now. Called by the sync worker, so the
+  /// dashboard's idea of how long a session has been running tracks reality
+  /// rather than stopping at the moment the app started.
+  Future<void> touchSession() async {
+    final session = _session;
+    if (session == null) return;
+
+    _session = session.copyWith(lastSeenAt: DateTime.now().toUtc());
+    try {
+      await LogPersistenceService.i.saveSession(_session!);
+    } catch (_) {
+      // A stale last-seen is not worth failing a sync over.
     }
   }
 

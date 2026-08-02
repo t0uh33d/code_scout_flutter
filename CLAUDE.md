@@ -7,7 +7,7 @@ This file provides guidance to AI coding agents when working with the `code_scou
 `code_scout` is a Flutter SDK that captures application logs and network requests, stores them locally in SQLite, and periodically syncs them to a remote Code Scout server via compressed tar.gz uploads.
 
 **Package name:** `code_scout`
-**Version:** 1.1.0
+**Version:** 1.2.0
 **Dart SDK:** ^3.11.0 | **Flutter:** >=3.0.0
 **Published:** [pub.dev/packages/code_scout](https://pub.dev/packages/code_scout)
 
@@ -63,6 +63,9 @@ lib/
     │   ├── overlay_manager.dart         # Floating button overlay
     │   ├── menu.dart                    # CSxInterface bottom sheet widget
     │   └── controller.dart              # CSxInterfaceController (socket connection)
+    ├── session/
+    │   ├── session_record.dart      # SessionRecord — one launch, wire + row shapes
+    │   └── device_profile.dart      # Device model, OS, app version via the plus plugins
     ├── utils/
     │   ├── draggable_widget.dart        # DraggableFloatingWindow
     │   └── stack_trace_parser.dart      # StackTraceParser + StackCallDetails
@@ -170,14 +173,37 @@ CREATE TABLE logs (
   call_phase TEXT,           -- request|response|error
   sync_status INTEGER NOT NULL DEFAULT 0  -- 0=pending, 1=syncing
 );
+
+CREATE TABLE sessions (
+  id TEXT PRIMARY KEY,       -- the launch's session id
+  installation_id TEXT,      -- stable for the life of the install
+  user_id TEXT,              -- only ever set by setUser()
+  device_model TEXT,
+  os_name TEXT,
+  os_version TEXT,
+  app_version TEXT,
+  build_number TEXT,
+  metadata TEXT,             -- JSON map of traits
+  started_at TEXT NOT NULL,
+  last_seen_at TEXT NOT NULL
+);
+
+CREATE TABLE meta (          -- key/value; holds installation_id
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
 ```
+
+Schema version is **2**. A database created by 1.1.x has only `logs`; `onUpgrade` adds the other two.
+
+Sessions outlive their logs by one step: a batch sends the session records its logs reference (not only the current launch, since a launch killed before syncing leaves logs behind), and `pruneSessions` drops the ones nothing refers to any more, always keeping the live one.
 
 ## Server Communication
 
 - **Auth headers:** `X-Project-ID` and `X-Project-Secret` on every request
 - **Credential validation:** `GET {link}api/validate`
 - **Log upload:** `POST {link}api/logs/dump` — multipart form with `file` field containing `data.tar.gz`
-- **Compression:** JSON array → tar archive (`data.json`) → gzip → `data.tar.gz` (runs in background isolate)
+- **Compression:** JSON → tar archive → gzip → `data.tar.gz` (runs in background isolate). Two entries: `data.json` holds the logs, `sessions.json` holds the sessions those logs belong to. The server reads entries by name, so `sessions.json` is omitted when there are none.
 - **All HTTP via `dart:io`** — no third-party HTTP packages in core
 
 ## What's Implemented vs TODO
@@ -189,13 +215,14 @@ CREATE TABLE logs (
 - Dio interceptor (`code_scout_dio` package) and HTTP client wrapper (`code_scout_http` package)
 - Tag-based and level-based log filtering
 - Batch compression and upload (with retry and backoff)
+- Sessions: every launch recorded with device model, OS, app version/build, and a stable installation id
+- `setUser(id, traits:)` — opt-in identity, re-sent with every batch so a mid-session call still lands
+- Device and app context capture (`captureDeviceInfo` / `captureAppContext` are honoured)
 - Floating overlay button
 - Socket connection establishment
 - Published on pub.dev
 
 ### Incomplete / TODO
 - Socket-based real-time log streaming (connection works, no data transmission)
-- Device info capture (`captureDeviceInfo` config exists but not implemented)
-- App context capture (`captureAppContext` config exists but not implemented)
 - Menu UI controls for log type toggling (checkboxes commented out)
 - Tests

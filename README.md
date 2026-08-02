@@ -27,6 +27,7 @@ Capture logs and network calls locally, then sync them to a self-hosted [Code Sc
 
 - **Structured logging** with levels (debug, info, warning, error, fatal), tags, and metadata
 - **Network interception** for Dio and `http` — correlates request, response, and error by request ID
+- **Sessions and devices** — every app launch is recorded with the device it ran on and the build it was, so you can ask what happened on one phone
 - **Local persistence** in SQLite so logs survive app restarts
 - **Automatic batch sync** — compresses logs to tar.gz and uploads on a configurable interval
 - **Zero third-party HTTP deps** — all server communication uses `dart:io`
@@ -156,6 +157,37 @@ final response = await client.get(Uri.parse('https://api.example.com/data'));
 
 Both interceptors call `NetworkManager.i.processNetworkRequest/Response/Error()` under the hood. Each network call gets a unique `requestId` that correlates the request, response, and error phases together, giving you a complete picture of every API call.
 
+### Name the person using the app
+
+Every app launch is a session. By default a session is anonymous, and Code Scout never guesses who someone is. Call `setUser` when you know:
+
+```dart
+await CodeScout.instance.setUser('u_8812');
+
+// With traits, which are stored against this session
+await CodeScout.instance.setUser('u_8812', traits: {'plan': 'free'});
+
+// On sign out
+await CodeScout.instance.setUser(null);
+```
+
+The id is stored and never parsed, so hash it first if you would rather Code Scout never held the real one. Traits sit on the session rather than on the person, because what matters while debugging is what was true when it broke, not what is true now.
+
+You can call this at any point in a launch. The session record is re-sent with every upload, so a call made ten minutes in reaches the dashboard on the next sync.
+
+### What a session records
+
+Alongside the id and the user, each session carries the device it ran on and the build of your app it was:
+
+| Field | Where it comes from |
+|-------|---------------------|
+| Device model | `device_info_plus` — "Pixel 7", "iPhone 15 Pro" |
+| OS name and version | "Android 14", "iOS 17.4" |
+| App version and build | `package_info_plus` — "3.11.2+418" |
+| Installation id | A random value written once and kept for the life of the install |
+
+The installation id is what lets the dashboard group launches by phone. It is generated locally, carries nothing personal, and goes away when the app is uninstalled. Set `captureDeviceInfo: false` or `captureAppContext: false` on `LoggingBehavior` to leave either group out.
+
 ### Overlay controls
 
 ```dart
@@ -200,6 +232,8 @@ Flutter App                                Code Scout Server
 | `LoggingBehavior.enabledTags` | `{'*'}` | Tags to capture (`*` = all) |
 | `LoggingBehavior.printToConsole` | `true` in debug | Print logs to console |
 | `LoggingBehavior.includeCurrentStackTrace` | `false` | Attach stack trace to every log |
+| `LoggingBehavior.captureDeviceInfo` | `true` | Record the device model, OS name and version |
+| `LoggingBehavior.captureAppContext` | `true` | Record your app's version and build number |
 | `LogSyncBehavior.syncInterval` | 5 minutes | How often to sync |
 | `LogSyncBehavior.maxBatchSize` | 100 | Max logs per upload |
 

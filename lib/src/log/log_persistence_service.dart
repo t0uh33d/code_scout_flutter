@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:code_scout/code_scout.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:path/path.dart';
 
@@ -41,31 +42,133 @@ class LogPersistenceService {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onOpen: (db) async {
         await db.rawQuery('PRAGMA journal_mode=WAL');
       },
       onCreate: (db, version) async {
-        await db.execute('''
-        CREATE TABLE logs (
-          id TEXT PRIMARY KEY,
-          session_id TEXT NOT NULL,
-          level TEXT NOT NULL,
-          message TEXT,
-          error TEXT,
-          stack_trace TEXT,
-          metadata TEXT,
-          tags TEXT,
-          timestamp TEXT,
-          is_network_call INTEGER NOT NULL DEFAULT 0,
-          request_id TEXT,
-          call_phase TEXT,
-          sync_status INTEGER NOT NULL DEFAULT 0
-        );
-        ''');
-        await db.execute(
-            'CREATE INDEX idx_logs_sync_status ON logs(sync_status, timestamp);');
+        await _createLogs(db);
+        await _createSessions(db);
+        await _createMeta(db);
       },
+      // The package is published, so there are real databases on real phones
+      // that only have the logs table. Adding the two new ones is all v2 is.
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await _createSessions(db);
+          await _createMeta(db);
+        }
+      },
+    );
+  }
+
+  Future<void> _createLogs(Database db) async {
+    await db.execute('''
+    CREATE TABLE logs (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      level TEXT NOT NULL,
+      message TEXT,
+      error TEXT,
+      stack_trace TEXT,
+      metadata TEXT,
+      tags TEXT,
+      timestamp TEXT,
+      is_network_call INTEGER NOT NULL DEFAULT 0,
+      request_id TEXT,
+      call_phase TEXT,
+      sync_status INTEGER NOT NULL DEFAULT 0
+    );
+    ''');
+    await db.execute(
+        'CREATE INDEX idx_logs_sync_status ON logs(sync_status, timestamp);');
+  }
+
+  Future<void> _createSessions(Database db) async {
+    await db.execute('''
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      installation_id TEXT,
+      user_id TEXT,
+      device_model TEXT,
+      os_name TEXT,
+      os_version TEXT,
+      app_version TEXT,
+      build_number TEXT,
+      metadata TEXT,
+      started_at TEXT NOT NULL,
+      last_seen_at TEXT NOT NULL
+    );
+    ''');
+  }
+
+  Future<void> _createMeta(Database db) async {
+    await db.execute('''
+    CREATE TABLE IF NOT EXISTS meta (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+    ''');
+  }
+
+  /// The installation id: written once, then the same value for the life of
+  /// the install. It lives in the SDK's own database, so uninstalling the app
+  /// takes it with them — which is exactly what "installation" should mean.
+  Future<String> installationId() async {
+    final db = await database;
+
+    final existing =
+        await db.query('meta', where: 'key = ?', whereArgs: ['installation_id']);
+    if (existing.isNotEmpty) {
+      final value = existing.first['value'];
+      if (value is String && value.isNotEmpty) return value;
+    }
+
+    final generated = const Uuid().v4();
+    await db.insert(
+      'meta',
+      {'key': 'installation_id', 'value': generated},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    return generated;
+  }
+
+  /// Stores the session, replacing what was there. The record changes as the
+  /// launch goes on — setUser() lands, device info resolves, last-seen moves —
+  /// and the local row is always the newest version of it.
+  Future<void> saveSession(SessionRecord session) async {
+    final db = await database;
+    await db.insert('sessions', session.toRow(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  /// The sessions a batch of logs belongs to.
+  ///
+  /// A batch is not always the current launch: logs from a launch that was
+  /// killed before it could sync are still in the table, and without their
+  /// session record they would arrive on the dashboard as a row with no device
+  /// and no user — the exact launch you would most want to look at.
+  Future<List<SessionRecord>> getSessionsByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final db = await database;
+    final placeholders = List.filled(ids.length, '?').join(', ');
+    final rows = await db.query(
+      'sessions',
+      where: 'id IN ($placeholders)',
+      whereArgs: ids,
+    );
+    return rows.map(SessionRecord.fromRow).toList();
+  }
+
+  /// Drops session records nothing refers to any more. [keepId] is the current
+  /// launch, which has no logs left the moment a sync succeeds but is very much
+  /// still running.
+  Future<void> pruneSessions(String keepId) async {
+    final db = await database;
+    await db.rawDelete(
+      'DELETE FROM sessions WHERE id != ? '
+      'AND id NOT IN (SELECT DISTINCT session_id FROM logs)',
+      [keepId],
     );
   }
 

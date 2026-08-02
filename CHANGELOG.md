@@ -1,3 +1,20 @@
+## 1.2.0
+
+- **New:** every app launch is now recorded as a session, carrying the device
+  model, OS name and version, your app's version and build number, and a random
+  installation id that is stable for the life of the install. The dashboard uses
+  these for its Sessions and Devices screens.
+- **New:** `CodeScout.instance.setUser(id, traits: {...})` names the person using
+  the app. Identity is opt-in and never inferred — a session is anonymous until
+  you call it. Pass `null` on sign out. Safe to call at any point in a launch.
+- **Behaviour change:** `captureDeviceInfo` and `captureAppContext` now do
+  something. Both have always defaulted to `true` and been ignored; they now
+  control whether those fields are collected.
+- **New dependencies:** `device_info_plus` and `package_info_plus`, for the
+  device model and app version respectively.
+- Uploads now carry a second `sessions.json` entry alongside `data.json`. Older
+  servers read entries by name and skip what they do not recognise.
+
 ## 1.1.1
 
 - **Fix:** logging or network capture before `CodeScout.instance.init()` no longer
