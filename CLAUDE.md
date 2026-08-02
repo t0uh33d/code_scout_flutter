@@ -225,5 +225,5 @@ Sessions outlive their logs by one step: a batch sends the session records its l
 
 ### Incomplete / TODO
 - Real-time log streaming and the overlay's pairing-code screen (the socket protocol is defined; there is no server for it yet)
-- Redaction on by default, and body size caps
+- Opt-in redaction (`RedactionBehavior`) and body size caps (32 KB, on by default)
 - Tests

@@ -3,138 +3,196 @@ import 'dart:convert';
 import 'package:code_scout/code_scout.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Redaction is the promise that a bearer token never leaves the phone. These
-/// tests are the promise being kept, so they lean towards proving a secret is
-/// gone rather than that a field survived.
+/// Redaction is opt-in. Code Scout is a debugging tool, and the token is
+/// sometimes exactly the reason a request is failing — so nothing is hidden
+/// unless the app asks for it.
 void main() {
-  const on = RedactionBehavior();
-  const off = RedactionBehavior.off();
+  const nothing = RedactionBehavior();
 
-  group('headers', () {
-    test('credentials are replaced wholesale', () {
+  group('by default nothing is hidden', () {
+    test('headers pass through untouched', () {
       final out = Redactor.headers({
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.secret',
+        'Authorization': 'Bearer sk_live_9f21b',
         'Cookie': 'session=abc123',
-        'X-API-Key': 'sk_live_9f21b',
-        'Content-Type': 'application/json',
-      }, on)!;
+      }, nothing)!;
 
-      expect(out['Authorization'], Redactor.placeholder);
-      expect(out['Cookie'], Redactor.placeholder);
-      expect(out['X-API-Key'], Redactor.placeholder);
-      // Everything else is the useful part of a header list.
-      expect(out['Content-Type'], 'application/json');
+      expect(out['Authorization'], 'Bearer sk_live_9f21b');
+      expect(out['Cookie'], 'session=abc123');
     });
 
-    // HTTP header names are case-insensitive, and a server answering
-    // `set-cookie` is the same server answering `Set-Cookie`.
-    test('matching ignores case', () {
-      for (final name in ['authorization', 'AUTHORIZATION', 'Authorization']) {
-        final out = Redactor.headers({name: 'Bearer abc'}, on)!;
-        expect(out[name], Redactor.placeholder, reason: '$name survived');
-      }
+    test('bodies pass through untouched', () {
+      final out = Redactor.body({'password': 'hunter2'}, nothing) as Map;
+      expect(out['password'], 'hunter2');
     });
 
-    test('the header name itself is kept, so you can see what was sent', () {
-      final out = Redactor.headers({'Authorization': 'Bearer abc'}, on)!;
-      expect(out.keys, contains('Authorization'));
+    test('metadata passes through untouched', () {
+      final out = Redactor.metadata({'token': 'abc'}, nothing)!;
+      expect(out['token'], 'abc');
     });
 
-    test('turning it off passes everything through', () {
-      final out = Redactor.headers({'Authorization': 'Bearer abc'}, off)!;
-      expect(out['Authorization'], 'Bearer abc');
-    });
-
-    test('extra header names can be added', () {
-      const cfg = RedactionBehavior(additionalHeaders: {'X-Internal-Trace'});
-      final out = Redactor.headers({'x-internal-trace': 'abc'}, cfg)!;
-      expect(out['x-internal-trace'], Redactor.placeholder);
+    test('a captured request keeps its token', () {
+      final data = NetworkRequestData(
+        method: 'POST',
+        url: Uri.parse('https://api.test/v2/pay'),
+        headers: {'Authorization': 'Bearer sk_live_9f21b'},
+        requestID: 'req-1',
+      );
+      // The point of the tool: you can see what you actually sent.
+      expect(jsonEncode(data.toMap()), contains('sk_live_9f21b'));
     });
   });
 
-  group('bodies', () {
-    test('secrets are redacted at any depth', () {
-      final out = Redactor.body({
-        'email': 'someone@example.com',
-        'password': 'hunter2',
-        'user': {
-          'name': 'Sam',
-          'access_token': 'at_9f21b',
-          'sessions': [
-            {'id': 1, 'refreshToken': 'rt_8812f'},
-          ],
-        },
-      }, on) as Map<String, dynamic>;
+  group('what you list is what is redacted', () {
+    const cfg = RedactionBehavior(
+      headers: {'authorization'},
+      bodyKeys: {'password'},
+    );
 
-      expect(out['password'], Redactor.placeholder);
-      expect((out['user'] as Map)['access_token'], Redactor.placeholder);
-      // Inside a list inside a map. The common shape, and the one a top-level
-      // scan would walk straight past.
-      expect(((out['user'] as Map)['sessions'] as List).first['refreshToken'],
-          Redactor.placeholder);
+    test('a listed header goes, an unlisted one stays', () {
+      final out = Redactor.headers({
+        'Authorization': 'Bearer abc',
+        'Cookie': 'session=abc123',
+      }, cfg)!;
 
-      // What is left is still worth reading.
-      expect(out['email'], 'someone@example.com');
-      expect((out['user'] as Map)['name'], 'Sam');
+      expect(out['Authorization'], Redactor.placeholder);
+      // Not listed, so still visible — this is the whole point of opt-in.
+      expect(out['Cookie'], 'session=abc123');
     });
 
-    // One entry has to cover every spelling a codebase uses for the same field.
+    // HTTP header names are case-insensitive, so the config should not have to
+    // guess which spelling the client used.
+    test('header matching ignores case, both ways', () {
+      for (final sent in ['authorization', 'AUTHORIZATION', 'Authorization']) {
+        expect(Redactor.headers({sent: 'Bearer abc'}, cfg)![sent],
+            Redactor.placeholder,
+            reason: '$sent survived');
+      }
+      const upper = RedactionBehavior(headers: {'Authorization'});
+      expect(Redactor.headers({'authorization': 'Bearer abc'}, upper)!['authorization'],
+          Redactor.placeholder);
+    });
+
+    test('the header name is kept, so you can see what was sent', () {
+      expect(Redactor.headers({'Authorization': 'Bearer abc'}, cfg)!.keys,
+          contains('Authorization'));
+    });
+
+    test('a listed key is redacted at any depth', () {
+      final out = Redactor.body({
+        'email': 'someone@example.com',
+        'user': {
+          'password': 'hunter2',
+          'sessions': [
+            {'id': 1, 'password': 'hunter3'},
+          ],
+        },
+      }, cfg) as Map<String, dynamic>;
+
+      expect((out['user'] as Map)['password'], Redactor.placeholder);
+      // Inside a list inside a map — the shape a top-level scan walks past.
+      expect(((out['user'] as Map)['sessions'] as List).first['password'],
+          Redactor.placeholder);
+      expect(out['email'], 'someone@example.com');
+    });
+
+    // One entry should cover every spelling a codebase uses for a field.
     test('key matching ignores case and separators', () {
+      const tokens = RedactionBehavior(bodyKeys: {'access_token'});
       for (final key in ['access_token', 'accessToken', 'Access-Token', 'ACCESS_TOKEN']) {
-        final out = Redactor.body({key: 'at_9f21b'}, on) as Map<String, dynamic>;
+        final out = Redactor.body({key: 'at_9f21b'}, tokens) as Map<String, dynamic>;
         expect(out[key], Redactor.placeholder, reason: '$key survived');
       }
     });
 
-    test('a near-miss key is not redacted', () {
-      final out = Redactor.body({'token_count': 42, 'tokenizer': 'bpe'}, on)
+    test('a near-miss key is left alone', () {
+      const tokens = RedactionBehavior(bodyKeys: {'token'});
+      final out = Redactor.body({'token_count': 42, 'tokenizer': 'bpe'}, tokens)
           as Map<String, dynamic>;
       expect(out['token_count'], 42, reason: 'over-redacting hides real data');
       expect(out['tokenizer'], 'bpe');
     });
 
-    test('extra body keys can be added', () {
-      const cfg = RedactionBehavior(additionalBodyKeys: {'order_signature'});
-      final out = Redactor.body({'orderSignature': 'sig'}, cfg) as Map<String, dynamic>;
-      expect(out['orderSignature'], Redactor.placeholder);
-    });
-
     test('a null or scalar body is left alone', () {
-      expect(Redactor.body(null, on), isNull);
-      expect(Redactor.body('plain text', on), 'plain text');
-      expect(Redactor.body(42, on), 42);
+      expect(Redactor.body(null, cfg), isNull);
+      expect(Redactor.body('plain text', cfg), 'plain text');
+      expect(Redactor.body(42, cfg), 42);
     });
   });
 
-  group('body caps', () {
+  group('the common lists are offered, not applied', () {
+    test('recommended turns them all on', () {
+      final cfg = RedactionBehavior.recommended();
+      final out = Redactor.headers({'Authorization': 'Bearer abc'}, cfg)!;
+      expect(out['Authorization'], Redactor.placeholder);
+      expect(
+        (Redactor.body({'refreshToken': 'rt_1'}, cfg) as Map)['refreshToken'],
+        Redactor.placeholder,
+      );
+    });
+
+    test('recommended takes additions', () {
+      final cfg = RedactionBehavior.recommended(bodyKeys: {'order_signature'});
+      final out = Redactor.body({'orderSignature': 'sig', 'password': 'p'}, cfg) as Map;
+      expect(out['orderSignature'], Redactor.placeholder);
+      expect(out['password'], Redactor.placeholder);
+    });
+
+    // The case the whole decision turned on: keeping the common list while
+    // watching the one header you are actually debugging.
+    test('a common entry can be dropped to debug it', () {
+      final cfg = RedactionBehavior(
+        headers: RedactionBehavior.commonHeaders.difference({'authorization'}),
+      );
+      final out = Redactor.headers({
+        'Authorization': 'Bearer abc',
+        'Cookie': 'session=abc',
+      }, cfg)!;
+
+      expect(out['Authorization'], 'Bearer abc', reason: 'the header being debugged');
+      expect(out['Cookie'], Redactor.placeholder);
+    });
+
+    test('the common lists are not applied on their own', () {
+      // Naming them must not switch them on — only listing them does.
+      expect(nothing.headers, isEmpty);
+      expect(nothing.bodyKeys, isEmpty);
+      expect(nothing.enabled, isFalse);
+      expect(RedactionBehavior.commonHeaders, contains('authorization'));
+    });
+  });
+
+  // Not a privacy setting: a 5 MB response uploaded from a phone is a cost the
+  // person holding it pays, whether or not anything in it is secret.
+  group('body caps apply regardless', () {
     test('an oversized body is truncated and says so', () {
       const cfg = RedactionBehavior(maxBodyBytes: 200);
-      final big = {'blob': 'x' * 5000};
+      final out = Redactor.body({'blob': 'x' * 5000}, cfg);
 
-      final out = Redactor.body(big, cfg);
       expect(out, isA<String>());
       final text = out as String;
       expect(utf8.encode(text).length, lessThan(400));
       expect(text, contains('truncated by Code Scout'));
-      // The reader is told how much was dropped rather than left guessing.
       expect(text, contains('KB total'));
     });
 
-    test('a body under the cap is untouched, and stays a structure', () {
-      const cfg = RedactionBehavior(maxBodyBytes: 4096);
-      final out = Redactor.body({'qty': 2}, cfg);
+    test('the cap still applies with nothing redacted', () {
+      final out = Redactor.body({'blob': 'x' * 100000}, nothing);
+      expect(out, isA<String>(), reason: 'the cap is about size, not secrets');
+    });
+
+    test('a body under the cap stays a structure', () {
+      final out = Redactor.body({'qty': 2}, nothing);
       expect(out, isA<Map>());
       expect((out as Map)['qty'], 2);
     });
 
     test('a cap of zero disables it', () {
       const cfg = RedactionBehavior(maxBodyBytes: 0);
-      final out = Redactor.body({'blob': 'x' * 100000}, cfg);
-      expect(out, isA<Map>());
+      expect(Redactor.body({'blob': 'x' * 100000}, cfg), isA<Map>());
     });
 
-    // Cutting on a byte boundary mid-character produces mojibake, which looks
-    // like corruption rather than truncation.
+    // Cutting on a byte boundary mid-character produces mojibake, which reads
+    // as corruption rather than truncation.
     test('truncation does not split a character', () {
       const cfg = RedactionBehavior(maxBodyBytes: 101);
       final out = Redactor.body('日' * 200, cfg) as String;
@@ -142,67 +200,10 @@ void main() {
       expect(out, contains('truncated by Code Scout'));
     });
 
-    // The cap protects the network, so it must apply to what is actually sent:
-    // a body full of secrets is redacted first, then measured.
     test('redaction runs before the cap', () {
-      const cfg = RedactionBehavior(maxBodyBytes: 1000000);
-      final out = Redactor.body({'password': 'hunter2', 'note': 'ok'}, cfg)
-          as Map<String, dynamic>;
+      const cfg = RedactionBehavior(bodyKeys: {'password'}, maxBodyBytes: 1000000);
+      final out = Redactor.body({'password': 'hunter2', 'note': 'ok'}, cfg) as Map;
       expect(out['password'], Redactor.placeholder);
-    });
-  });
-
-  // The tests above prove the Redactor works. These prove it is wired in — a
-  // correct redactor that nothing calls is still a token on the wire.
-  group('capture points', () {
-    test('a captured request carries no bearer token', () {
-      final data = NetworkRequestData(
-        method: 'POST',
-        url: Uri.parse('https://api.test/v2/pay'),
-        headers: {'Authorization': 'Bearer sk_live_9f21b', 'Accept': '*/*'},
-        body: {'card_number': '4242424242424242', 'amount_cents': 4999},
-        requestID: 'req-1',
-      );
-
-      final map = data.toMap();
-      final encoded = jsonEncode(map);
-
-      expect(encoded, isNot(contains('sk_live_9f21b')));
-      expect(encoded, isNot(contains('4242424242424242')));
-      // What is left still describes the call.
-      expect(map['method'], 'POST');
-      expect((map['headers'] as Map)['Accept'], '*/*');
-      expect((map['body'] as Map)['amount_cents'], 4999);
-    });
-
-    test('a captured log entry carries no hand-logged secret', () {
-      final entry = LogEntry(
-        level: LogLevel.info,
-        message: 'signed in',
-        sessionID: 'session',
-        metadata: {'userId': 'u_8812', 'refresh_token': 'rt_8812f'},
-      );
-
-      final row = entry.toJson();
-      expect(row['metadata'], isNot(contains('rt_8812f')));
-      expect(row['metadata'], contains('u_8812'));
-    });
-  });
-
-  group('metadata', () {
-    test('a hand-logged secret is redacted too', () {
-      final out = Redactor.metadata({'userId': '123', 'token': 'abc'}, on)!;
-      expect(out['token'], Redactor.placeholder);
-      expect(out['userId'], '123');
-    });
-
-    test('nothing to redact leaves the map as it was', () {
-      final out = Redactor.metadata({'screen': 'checkout'}, on)!;
-      expect(out, {'screen': 'checkout'});
-    });
-
-    test('null stays null', () {
-      expect(Redactor.metadata(null, on), isNull);
     });
   });
 }

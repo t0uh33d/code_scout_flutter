@@ -4,9 +4,10 @@ import 'package:code_scout/code_scout.dart';
 
 /// Applies [RedactionBehavior] to what the SDK is about to record.
 ///
-/// Everything runs at capture time, before the log reaches SQLite, so a
-/// redacted value is not on disk and was never in a batch. The dashboard and
-/// the on-device overlay both simply show what is left.
+/// Redaction is opt-in: with nothing configured this is a pass-through, and
+/// what your app sent is what gets recorded. Whatever you do configure is
+/// applied at capture, before the log reaches SQLite, so a redacted value is
+/// not on disk and was never in a batch.
 class Redactor {
   const Redactor._();
 
@@ -24,12 +25,13 @@ class Redactor {
     final cfg = config ?? _config;
     if (raw is! Map) return raw is Map<String, dynamic> ? raw : null;
 
+    // Resolved once, not once per header: the getter builds a new set.
+    final redact = cfg.headerNames;
+
     final out = <String, dynamic>{};
     raw.forEach((key, value) {
       final name = key.toString();
-      out[name] = cfg.enabled && cfg.headers.contains(name.toLowerCase())
-          ? placeholder
-          : value;
+      out[name] = redact.contains(name.toLowerCase()) ? placeholder : value;
     });
     return out;
   }
@@ -39,7 +41,8 @@ class Redactor {
   /// only looking at the top level would miss it.
   static Object? body(Object? raw, [RedactionBehavior? config]) {
     final cfg = config ?? _config;
-    final redacted = cfg.enabled ? _walk(raw, cfg) : raw;
+    final redacted = cfg.bodyKeys.isEmpty ? raw : _walk(raw, cfg.bodyKeyNames);
+    // The cap applies either way: it is about upload size, not about secrets.
     return _cap(redacted, cfg);
   }
 
@@ -49,24 +52,24 @@ class Redactor {
   static Map<String, dynamic>? metadata(Map<String, dynamic>? raw,
       [RedactionBehavior? config]) {
     final cfg = config ?? _config;
-    if (raw == null || !cfg.enabled) return raw;
-    final walked = _walk(raw, cfg);
+    if (raw == null || cfg.bodyKeys.isEmpty) return raw;
+    final walked = _walk(raw, cfg.bodyKeyNames);
     return walked is Map<String, dynamic> ? walked : raw;
   }
 
-  static Object? _walk(Object? value, RedactionBehavior cfg) {
+  static Object? _walk(Object? value, Set<String> redact) {
     if (value is Map) {
       final out = <String, dynamic>{};
       value.forEach((key, child) {
         final name = key.toString();
-        out[name] = cfg.bodyKeys.contains(RedactionBehavior.normaliseKey(name))
+        out[name] = redact.contains(RedactionBehavior.normaliseKey(name))
             ? placeholder
-            : _walk(child, cfg);
+            : _walk(child, redact);
       });
       return out;
     }
     if (value is List) {
-      return value.map((child) => _walk(child, cfg)).toList();
+      return value.map((child) => _walk(child, redact)).toList();
     }
     return value;
   }

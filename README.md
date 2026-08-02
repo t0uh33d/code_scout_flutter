@@ -27,7 +27,7 @@ Capture logs and network calls locally, then sync them to a self-hosted [Code Sc
 
 - **Structured logging** with levels (debug, info, warning, error, fatal), tags, and metadata
 - **Network interception** for Dio and `http` — correlates request, response, and error by request ID
-- **Redaction on by default** — credentials are stripped on the device, before anything is written to disk or uploaded
+- **Redaction you control** — name what to strip and it never reaches disk or the network; name nothing and you see exactly what your app sent
 - **Sessions and devices** — every app launch is recorded with the device it ran on and the build it was, so you can ask what happened on one phone
 - **Local persistence** in SQLite so logs survive app restarts
 - **Automatic batch sync** — compresses logs to tar.gz and uploads on a configurable interval
@@ -189,40 +189,44 @@ Alongside the id and the user, each session carries the device it ran on and the
 
 The installation id is what lets the dashboard group launches by phone. It is generated locally, carries nothing personal, and goes away when the app is uninstalled. Set `captureDeviceInfo: false` or `captureAppContext: false` on `LoggingBehavior` to leave either group out.
 
-### What never leaves the device
+### Redaction
 
-Redaction is on by default. Code Scout is a logging tool, and a logging tool that ships `Authorization` headers to a server is building someone a database of their users' bearer tokens.
+Redaction is **opt-in**. Out of the box Code Scout records what your app sent, unchanged — because this is a debugging tool, and the token is sometimes the exact reason a request is failing.
 
-Stripping happens at capture, before the log reaches SQLite, so a redacted value is not on disk either. What you see in the dashboard is what was recorded:
+Name what you want stripped and it is replaced at capture, before the log reaches SQLite, so it is never written to disk or uploaded:
+
+```dart
+CodeScoutConfiguration(
+  redaction: RedactionBehavior(
+    headers: {'authorization', 'cookie'},
+    bodyKeys: {'password', 'card_number'},
+  ),
+)
+```
+
+In the dashboard that reads as a deliberate absence rather than a missing field:
 
 ```
 authorization  ••••••  redacted on the device
 content-type   application/json
 ```
 
-Out of the box it covers:
-
-- **Headers** — `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-api-key`, and the usual token headers
-- **Body and metadata keys** — `password`, `token`, `access_token`, `secret`, `client_secret`, `api_key`, `cvv`, `ssn` and similar, at any depth including inside lists
-
-Key matching ignores case and separators, so `access_token`, `accessToken` and `Access-Token` are all the same key.
-
-Add your own, or turn it off if you own every endpoint and the server:
+There are two lists of the usual suspects — `RedactionBehavior.commonHeaders` and `RedactionBehavior.commonBodyKeys` — so you do not have to type them. They do nothing until you ask for them:
 
 ```dart
-CodeScoutConfiguration(
-  redaction: RedactionBehavior(
-    additionalHeaders: {'X-Internal-Trace'},
-    additionalBodyKeys: {'order_signature'},
-    maxBodyBytes: 64 * 1024,
-  ),
-)
+// The common lists, plus your own
+RedactionBehavior.recommended(bodyKeys: {'order_signature'})
 
-// Or, if you really mean it
-CodeScoutConfiguration(redaction: RedactionBehavior.off())
+// The common lists, minus the header you are debugging today
+RedactionBehavior(
+  headers: RedactionBehavior.commonHeaders.difference({'authorization'}),
+  bodyKeys: RedactionBehavior.commonBodyKeys,
+)
 ```
 
-Bodies over `maxBodyBytes` (32 KB by default) are truncated with a note saying how much was dropped. A single response can be megabytes, and uploading that from a phone is a cost the person holding it pays.
+Body keys match at any depth, including inside lists, ignoring case and separators — so one `access_token` entry covers `accessToken` and `Access-Token` too. Header names match case-insensitively.
+
+**Body size caps are separate**, and on by default at 32 KB. That is not about secrets: a single response can be megabytes, and uploading it from a phone is a cost the person holding it pays. Oversized bodies are truncated with a note saying how much was dropped. Set `maxBodyBytes: 0` to keep everything.
 
 ### The in-app overlay
 
@@ -278,9 +282,8 @@ Flutter App                                Code Scout Server
 | `LoggingBehavior.includeCurrentStackTrace` | `false` | Attach stack trace to every log |
 | `LoggingBehavior.captureDeviceInfo` | `true` | Record the device model, OS name and version |
 | `LoggingBehavior.captureAppContext` | `true` | Record your app's version and build number |
-| `RedactionBehavior.enabled` | `true` | Strip credentials on the device |
-| `RedactionBehavior.additionalHeaders` | `{}` | Header names to redact on top of the defaults |
-| `RedactionBehavior.additionalBodyKeys` | `{}` | Body and metadata keys to redact on top of the defaults |
+| `RedactionBehavior.headers` | `{}` | Header names to redact — nothing by default |
+| `RedactionBehavior.bodyKeys` | `{}` | Body and metadata keys to redact — nothing by default |
 | `RedactionBehavior.maxBodyBytes` | 32 KB | Bodies larger than this are truncated |
 | `LogSyncBehavior.syncInterval` | 5 minutes | How often to sync |
 | `LogSyncBehavior.maxBatchSize` | 100 | Max logs per upload |

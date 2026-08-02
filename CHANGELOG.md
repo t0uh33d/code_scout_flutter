@@ -1,11 +1,13 @@
 ## 1.2.0
 
-- **New, and on by default: redaction.** Credentials are stripped at capture,
-  before anything reaches SQLite or an upload. Covers the usual credential
-  headers and body keys (`password`, `access_token`, `secret`, `cvv` and the
-  rest) at any depth, matching case- and separator-insensitively so
-  `access_token` and `accessToken` are the same key. Configure with
-  `RedactionBehavior`, or `RedactionBehavior.off()` if you own every endpoint.
+- **New: redaction, opt-in.** Name headers or body keys in `RedactionBehavior`
+  and they are replaced at capture, before anything reaches SQLite or an upload.
+  Nothing is redacted unless you ask — this is a debugging tool, and a token is
+  sometimes the reason a request is failing. Body keys match at any depth
+  including inside lists, ignoring case and separators, so one `access_token`
+  entry covers `accessToken` too. `RedactionBehavior.commonHeaders` and
+  `commonBodyKeys` hold the usual suspects, and `RedactionBehavior.recommended()`
+  switches them all on.
 - **New:** bodies over `maxBodyBytes` (32 KB by default) are truncated with a
   note saying how much was dropped, so one large response cannot turn into a
   large upload on someone's mobile connection.
