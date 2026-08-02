@@ -226,4 +226,5 @@ Sessions outlive their logs by one step: a batch sends the session records its l
 ### Incomplete / TODO
 - Real-time log streaming and the overlay's pairing-code screen (the socket protocol is defined; there is no server for it yet)
 - Opt-in redaction (`RedactionBehavior`) and body size caps (32 KB, on by default)
+- Server backoff: 429/503 read `Retry-After` and pause without counting toward the auto-stop; 413 halves the batch. `lib/src/log/sync_backoff.dart`
 - Tests

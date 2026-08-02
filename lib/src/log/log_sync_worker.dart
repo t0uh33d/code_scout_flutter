@@ -7,6 +7,7 @@ import 'dart:math' show Random;
 import 'package:code_scout/code_scout.dart';
 import 'package:code_scout/src/log/log_compressor.dart';
 import 'package:code_scout/src/log/log_persistence_service.dart';
+import 'package:code_scout/src/log/sync_backoff.dart';
 
 class LogSyncWorker {
   static final LogSyncWorker i = LogSyncWorker._i();
@@ -20,8 +21,27 @@ class LogSyncWorker {
   Timer? _syncTimer;
   bool _syncing = false;
   int _consecutiveFailures = 0;
+
+  /// Set when the server asks for quiet. Cycles are skipped until it passes.
+  ///
+  /// Skipping rather than rescheduling the timer: the worker stays alive and
+  /// `isRunning` stays honestly true. The cost is that the first attempt after
+  /// the deadline can be up to one interval late, which errs slower — the safe
+  /// direction when a server has just told you to back off.
+  DateTime? _backoffUntil;
+
+  /// Shrinks when the server says a batch was too large, and grows back on
+  /// success. Starts at the configured size.
+  int? _effectiveBatchSize;
   static const int _maxConsecutiveFailures = 5;
   static const Duration _uploadTimeout = Duration(seconds: 30);
+
+  /// Used when a 429 arrives with no usable Retry-After. Twice the sync
+  /// interval: long enough to be a real pause, short enough to recover.
+  Duration get _defaultBackoff {
+    final interval = CodeScout.instance.configuration.sync?.syncInterval;
+    return (interval ?? const Duration(minutes: 5)) * 2;
+  }
 
   bool get isRunning => _syncTimer?.isActive ?? false;
 
@@ -53,8 +73,20 @@ class LogSyncWorker {
     _syncTimer = null;
   }
 
+  /// How long the worker is currently holding off, or null when it is not.
+  Duration? get backoffRemaining {
+    final until = _backoffUntil;
+    if (until == null) return null;
+    final left = until.difference(DateTime.now());
+    return left.isNegative ? null : left;
+  }
+
   Future<void> _sync() async {
     if (_syncing) return;
+
+    final until = _backoffUntil;
+    if (until != null && DateTime.now().isBefore(until)) return;
+
     _syncing = true;
 
     final config = CodeScout.instance.configuration;
@@ -70,8 +102,9 @@ class LogSyncWorker {
     File? file;
 
     try {
+      _effectiveBatchSize ??= syncBehaviour.maxBatchSize;
       logs = await LogPersistenceService.i
-          .getLogEntries(limit: syncBehaviour.maxBatchSize);
+          .getLogEntries(limit: _effectiveBatchSize!);
 
       if (logs.isEmpty) {
         _syncing = false;
@@ -106,9 +139,23 @@ class LogSyncWorker {
           .pruneSessions(CodeScout.instance.currentSessionId);
 
       _consecutiveFailures = 0;
+      _backoffUntil = null;
+      _growBatch(syncBehaviour.maxBatchSize);
     } catch (e, st) {
-      log('LogSyncWorker: Sync failed: $e', stackTrace: st);
-      _consecutiveFailures++;
+      // A throttle and an oversized batch are the server working correctly.
+      // Neither touches the failure counter, so neither can reach the auto-stop
+      // below — that keeps its original meaning: this server is broken, or
+      // these credentials are wrong.
+      if (e is SyncBackoff) {
+        _backoffUntil = DateTime.now().add(e.retryAfter);
+        log('LogSyncWorker: server asked for ${e.retryAfter.inSeconds}s of quiet.');
+      } else if (e is UploadTooLarge) {
+        _shrinkBatch();
+        log('LogSyncWorker: batch refused as too large, retrying with $_effectiveBatchSize.');
+      } else {
+        log('LogSyncWorker: Sync failed: $e', stackTrace: st);
+        _consecutiveFailures++;
+      }
 
       // Roll back sync_status so logs are retried next cycle
       if (logIds.isNotEmpty) {
@@ -133,6 +180,22 @@ class LogSyncWorker {
       } catch (_) {}
       _syncing = false;
     }
+  }
+
+  /// Halves the batch, with a floor of one. At one, a log the server still
+  /// refuses can never fit, so it is dropped rather than retried forever.
+  void _shrinkBatch() {
+    final current = _effectiveBatchSize ?? 100;
+    _effectiveBatchSize = current <= 1 ? 1 : current ~/ 2;
+  }
+
+  /// Grows back toward the configured size after a success, so one large batch
+  /// does not permanently halve the throughput.
+  void _growBatch(int configured) {
+    final current = _effectiveBatchSize;
+    if (current == null || current >= configured) return;
+    final grown = current * 2;
+    _effectiveBatchSize = grown > configured ? configured : grown;
   }
 
   /// The distinct sessions a batch of logs refers to, as wire JSON.
@@ -186,6 +249,20 @@ class LogSyncWorker {
 
       final response = await request.close();
 
+      // Read the status while it is still a number. Collapsing everything into
+      // one untyped throw is what made a throttle indistinguishable from an
+      // outage.
+      if (response.statusCode == 429 || response.statusCode == 503) {
+        // 503 too: a reverse proxy in front of the instance sends it with
+        // Retry-After during maintenance, and the right answer is identical.
+        final header = response.headers.value('retry-after');
+        await response.drain<void>();
+        throw SyncBackoff(parseRetryAfter(header, fallback: _defaultBackoff));
+      }
+      if (response.statusCode == 413) {
+        await response.drain<void>();
+        throw const UploadTooLarge();
+      }
       if (response.statusCode != 200) {
         final body = await response.transform(utf8.decoder).join();
         throw Exception('Upload failed (${response.statusCode}): $body');

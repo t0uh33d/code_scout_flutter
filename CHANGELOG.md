@@ -1,5 +1,14 @@
 ## 1.2.0
 
+- **New: the SDK honours server backoff.** A `429` (or a `503` from a proxy) is
+  now read as an instruction rather than a failure: the worker goes quiet for
+  the `Retry-After` the server asked for and does not count it toward the
+  five-failure auto-stop. Previously every non-200 was one untyped throw, so a
+  server correctly saying "you are over your allowance" stopped logging for the
+  rest of the process with no way back.
+- **New:** a `413` halves the batch size and retries rather than failing, growing
+  back toward the configured size on success.
+
 - **New: redaction, opt-in.** Name headers or body keys in `RedactionBehavior`
   and they are replaced at capture, before anything reaches SQLite or an upload.
   Nothing is redacted unless you ask — this is a debugging tool, and a token is

@@ -27,6 +27,7 @@ Capture logs and network calls locally, then sync them to a self-hosted [Code Sc
 
 - **Structured logging** with levels (debug, info, warning, error, fatal), tags, and metadata
 - **Network interception** for Dio and `http` — correlates request, response, and error by request ID
+- **Backs off when told to** — a throttled or busy server is honoured, not retried into the ground
 - **Redaction you control** — name what to strip and it never reaches disk or the network; name nothing and you see exactly what your app sent
 - **Sessions and devices** — every app launch is recorded with the device it ran on and the build it was, so you can ask what happened on one phone
 - **Local persistence** in SQLite so logs survive app restarts
@@ -271,6 +272,8 @@ Flutter App                                Code Scout Server
 2. A periodic timer picks up unsync'd logs, marks them as syncing, compresses them in a background isolate, and uploads via `dart:io`
 3. On success, logs are deleted locally. On failure, they're rolled back and retried next cycle
 4. After 5 consecutive failures the sync worker stops automatically to avoid battery drain
+5. A `429` or `503` is not a failure. The worker reads `Retry-After`, goes quiet for that long, and resumes — it never counts toward the auto-stop, so a server protecting itself can never permanently silence an SDK
+6. A `413` halves the batch and retries, growing back on success
 
 ## Configuration
 
