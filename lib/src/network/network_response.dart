@@ -26,8 +26,8 @@ class NetworkResponseData extends NetworkData {
   Map<String, dynamic> toMap() {
     return {
       'status_code': statusCode,
-      'headers': headers,
-      'body': body,
+      'headers': Redactor.headers(headers),
+      'body': Redactor.body(body),
       'timestamp': timestamp?.toIso8601String(),
       'request': _request?.toMap(),
     };

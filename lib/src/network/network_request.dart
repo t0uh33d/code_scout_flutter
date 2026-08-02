@@ -34,11 +34,14 @@ class NetworkRequestData extends NetworkData {
 
   @override
   Map<String, dynamic> toMap() {
+    // Redacted here, at capture, rather than anywhere downstream: this is the
+    // last point before the value would be written to SQLite, and a secret on
+    // disk has already left the developer's control.
     return {
       'method': method,
       'url': url.toString(),
-      'headers': headers,
-      'body': body,
+      'headers': Redactor.headers(headers),
+      'body': Redactor.body(body),
       'timestamp': timestamp?.toIso8601String(),
       'request_id': requestID,
     };

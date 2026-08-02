@@ -27,6 +27,7 @@ Capture logs and network calls locally, then sync them to a self-hosted [Code Sc
 
 - **Structured logging** with levels (debug, info, warning, error, fatal), tags, and metadata
 - **Network interception** for Dio and `http` — correlates request, response, and error by request ID
+- **Redaction on by default** — credentials are stripped on the device, before anything is written to disk or uploaded
 - **Sessions and devices** — every app launch is recorded with the device it ran on and the build it was, so you can ask what happened on one phone
 - **Local persistence** in SQLite so logs survive app restarts
 - **Automatic batch sync** — compresses logs to tar.gz and uploads on a configurable interval
@@ -188,6 +189,41 @@ Alongside the id and the user, each session carries the device it ran on and the
 
 The installation id is what lets the dashboard group launches by phone. It is generated locally, carries nothing personal, and goes away when the app is uninstalled. Set `captureDeviceInfo: false` or `captureAppContext: false` on `LoggingBehavior` to leave either group out.
 
+### What never leaves the device
+
+Redaction is on by default. Code Scout is a logging tool, and a logging tool that ships `Authorization` headers to a server is building someone a database of their users' bearer tokens.
+
+Stripping happens at capture, before the log reaches SQLite, so a redacted value is not on disk either. What you see in the dashboard is what was recorded:
+
+```
+authorization  ••••••  redacted on the device
+content-type   application/json
+```
+
+Out of the box it covers:
+
+- **Headers** — `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-api-key`, and the usual token headers
+- **Body and metadata keys** — `password`, `token`, `access_token`, `secret`, `client_secret`, `api_key`, `cvv`, `ssn` and similar, at any depth including inside lists
+
+Key matching ignores case and separators, so `access_token`, `accessToken` and `Access-Token` are all the same key.
+
+Add your own, or turn it off if you own every endpoint and the server:
+
+```dart
+CodeScoutConfiguration(
+  redaction: RedactionBehavior(
+    additionalHeaders: {'X-Internal-Trace'},
+    additionalBodyKeys: {'order_signature'},
+    maxBodyBytes: 64 * 1024,
+  ),
+)
+
+// Or, if you really mean it
+CodeScoutConfiguration(redaction: RedactionBehavior.off())
+```
+
+Bodies over `maxBodyBytes` (32 KB by default) are truncated with a note saying how much was dropped. A single response can be megabytes, and uploading that from a phone is a cost the person holding it pays.
+
 ### The in-app overlay
 
 A floating button draws over your app. Tapping it opens a sheet with three tabs:
@@ -242,6 +278,10 @@ Flutter App                                Code Scout Server
 | `LoggingBehavior.includeCurrentStackTrace` | `false` | Attach stack trace to every log |
 | `LoggingBehavior.captureDeviceInfo` | `true` | Record the device model, OS name and version |
 | `LoggingBehavior.captureAppContext` | `true` | Record your app's version and build number |
+| `RedactionBehavior.enabled` | `true` | Strip credentials on the device |
+| `RedactionBehavior.additionalHeaders` | `{}` | Header names to redact on top of the defaults |
+| `RedactionBehavior.additionalBodyKeys` | `{}` | Body and metadata keys to redact on top of the defaults |
+| `RedactionBehavior.maxBodyBytes` | 32 KB | Bodies larger than this are truncated |
 | `LogSyncBehavior.syncInterval` | 5 minutes | How often to sync |
 | `LogSyncBehavior.maxBatchSize` | 100 | Max logs per upload |
 

@@ -36,7 +36,7 @@ class NetworkErrorData extends NetworkData {
     return {
       'type': type,
       'message': message,
-      'response': response,
+      'response': Redactor.body(response),
       'stack_trace': stackTraceParser.formattedTrace.join('\n'),
       'timestamp': timestamp.toIso8601String(),
       'request': _request?.toMap(),

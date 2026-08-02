@@ -1,5 +1,15 @@
 ## 1.2.0
 
+- **New, and on by default: redaction.** Credentials are stripped at capture,
+  before anything reaches SQLite or an upload. Covers the usual credential
+  headers and body keys (`password`, `access_token`, `secret`, `cvv` and the
+  rest) at any depth, matching case- and separator-insensitively so
+  `access_token` and `accessToken` are the same key. Configure with
+  `RedactionBehavior`, or `RedactionBehavior.off()` if you own every endpoint.
+- **New:** bodies over `maxBodyBytes` (32 KB by default) are truncated with a
+  note saying how much was dropped, so one large response cannot turn into a
+  large upload on someone's mobile connection.
+
 - **New:** the in-app overlay is now a real log viewer. Tapping the floating
   button opens a sheet with **Logs**, **Network** and **Session** tabs: level
   and tag filters, rows that expand to their error, stack trace and metadata,

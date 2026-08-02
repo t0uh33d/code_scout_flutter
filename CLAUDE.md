@@ -68,6 +68,7 @@ lib/
     │   ├── session_record.dart      # SessionRecord — one launch, wire + row shapes
     │   └── device_profile.dart      # Device model, OS, app version via the plus plugins
     ├── utils/
+    │   ├── redactor.dart               # Strips credentials at capture
     │   ├── draggable_widget.dart        # DraggableFloatingWindow
     │   └── stack_trace_parser.dart      # StackTraceParser + StackCallDetails
     └── const/
@@ -224,4 +225,5 @@ Sessions outlive their logs by one step: a batch sends the session records its l
 
 ### Incomplete / TODO
 - Real-time log streaming and the overlay's pairing-code screen (the socket protocol is defined; there is no server for it yet)
+- Redaction on by default, and body size caps
 - Tests

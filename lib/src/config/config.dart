@@ -11,11 +11,15 @@ part 'logging_behaviour.dart';
 part 'sync_behaviour.dart';
 part 'real_time.dart';
 part 'project_creds.dart';
+part 'redaction.dart';
 
 class CodeScoutConfiguration {
   final LoggingBehavior logging;
   final RealTimeConfig realTime;
   final ProjectCredentials? projectCredentials;
+
+  /// What never leaves the device. On by default — see [RedactionBehavior].
+  final RedactionBehavior redaction;
 
   LogSyncBehavior? sync;
 
@@ -24,6 +28,7 @@ class CodeScoutConfiguration {
     RealTimeConfig? realTime,
     this.projectCredentials,
     this.sync,
+    this.redaction = const RedactionBehavior(),
   })  : logging = logging ?? LoggingBehavior(),
         realTime = realTime ?? RealTimeConfig();
 }

@@ -74,7 +74,12 @@ class LogEntry {
       'stack_trace': jsonEncode(
         _stackCallDetails?.map((e) => e.toJson()).toList() ?? [],
       ),
-      'metadata': jsonEncode(metadata ?? {}),
+      // Network metadata was redacted when it was built; this covers the other
+      // case — a developer logging `metadata: {'token': ...}` by hand, which is
+      // the same problem and deserves the same answer.
+      'metadata': jsonEncode(
+        isNetworkCall ? (metadata ?? {}) : (Redactor.metadata(metadata) ?? {}),
+      ),
       'tags': jsonEncode(tags?.toList() ?? []),
       'timestamp': timestamp?.toIso8601String(),
       'is_network_call': isNetworkCall ? 1 : 0,
