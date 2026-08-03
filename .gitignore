@@ -9,7 +9,6 @@
 .history
 .svn/
 migrate_working_dir/
-example/
 
 # IntelliJ related
 *.iml
@@ -34,3 +33,17 @@ build/
 package-lock.json
 .claude
 .vscode
+
+# The example app is committed so it can be cloned and run, and so pub.dev has
+# something to show on the Example tab. What the toolchain regenerates is not.
+example/pubspec.lock
+example/android/local.properties
+example/android/.gradle/
+example/ios/Flutter/Generated.xcconfig
+example/ios/Flutter/flutter_export_environment.sh
+example/macos/Flutter/Flutter-Generated.xcconfig
+**/Flutter/ephemeral/
+**/flutter/ephemeral/
+**/Pods/
+**/.symlinks/
+**/xcuserdata/
