@@ -73,13 +73,16 @@ class _CSxInterfaceState extends State<CSxInterface> {
           clipBehavior: Clip.antiAlias,
           child: SafeArea(
             top: false,
+            // Fills the height it is given rather than shrinking to whichever
+            // tab is open. Sizing to content meant the sheet jumped on every
+            // switch — a full log list is tall, the Live tab is a code box —
+            // and the tab row moved out from under your thumb between taps.
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 const _Grip(),
                 _Header(count: entries.length),
                 _Tabs(active: _tab, onSelect: (t) => setState(() => _tab = t)),
-                Flexible(child: _body(entries)),
+                Expanded(child: _body(entries)),
               ],
             ),
           ),
@@ -93,7 +96,6 @@ class _CSxInterfaceState extends State<CSxInterface> {
       case _Tab.logs:
         final visible = entries.where(_matches).toList();
         return Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
             _LevelRow(minimum: _minimum, onSelect: (l) => setState(() => _minimum = l)),
             _TagRow(
@@ -102,7 +104,7 @@ class _CSxInterfaceState extends State<CSxInterface> {
               excluded: _excluded,
               onTap: _cycleTag,
             ),
-            Flexible(
+            Expanded(
               child: visible.isEmpty
                   ? const _Empty(
                       title: 'Nothing to show',

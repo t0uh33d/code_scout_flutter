@@ -72,8 +72,11 @@ class OverlayManager {
       // Tapping the dimmed app behind it closes the sheet, which is what every
       // other sheet on the platform does.
       isDismissible: true,
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      // Tight, not a maximum. With only a maximum the sheet takes the height of
+      // whichever tab is open, so it grew and shrank on every switch. One size
+      // for all four is what makes the tab row stay where you last tapped it.
+      constraints: BoxConstraints.tightFor(
+        height: MediaQuery.of(context).size.height * 0.85,
       ),
       builder: (context) {
         return const CSxInterface();

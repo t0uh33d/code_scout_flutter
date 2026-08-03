@@ -134,6 +134,23 @@ void main() {
     expect(find.text('anonymous'), findsOneWidget);
   });
 
+  // The sheet is something you tab across constantly while chasing one bug.
+  // Sizing it to whichever tab is open means it jumps every time, and the tab
+  // row moves out from under your thumb.
+  testWidgets('the sheet keeps its height across tabs', (tester) async {
+    add('one log');
+    await pumpSheet(tester);
+
+    double height() => tester.getSize(find.byType(CSxInterface)).height;
+    final onLogs = height();
+
+    for (final tab in ['Network', 'Live', 'Session', 'Logs']) {
+      await tester.tap(find.text(tab));
+      await tester.pumpAndSettle();
+      expect(height(), onLogs, reason: 'the sheet resized on the $tab tab');
+    }
+  });
+
   testWidgets('an empty buffer explains itself', (tester) async {
     await pumpSheet(tester);
     expect(find.text('Nothing to show'), findsOneWidget);
