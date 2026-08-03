@@ -14,8 +14,18 @@ class ProjectCredentials {
       throw ArgumentError('Project key and secret cannot be empty.');
     }
 
-    if (!Uri.parse(link).isAbsolute) {
-      throw ArgumentError('Link must be a valid absolute URL.');
+    // isAbsolute alone is not enough, and the way it falls short is quiet.
+    // `localhost:24275/` is an absolute URI as far as Dart is concerned — it
+    // reads `localhost` as the scheme and leaves the host empty — so it passed
+    // this check and then failed much later, inside the catch in
+    // validateCredentials, as "your credentials are invalid". Requiring a host
+    // and a scheme we can actually open says so here, where the mistake is.
+    final uri = Uri.tryParse(link);
+    if (uri == null ||
+        (uri.scheme != 'http' && uri.scheme != 'https') ||
+        uri.host.isEmpty) {
+      throw ArgumentError.value(link, 'link',
+          'must be an http or https URL with a host, like http://localhost:24275/');
     }
 
     if (!link.endsWith('/')) {
