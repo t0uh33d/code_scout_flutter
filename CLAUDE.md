@@ -7,7 +7,7 @@ This file provides guidance to AI coding agents when working with the `code_scou
 `code_scout` is a Flutter SDK that captures application logs and network requests, stores them locally in SQLite, and periodically syncs them to a remote Code Scout server via compressed tar.gz uploads.
 
 **Package name:** `code_scout`
-**Version:** 1.2.0
+**Version:** 1.3.0
 **Dart SDK:** ^3.11.0 | **Flutter:** >=3.0.0
 **Published:** [pub.dev/packages/code_scout](https://pub.dev/packages/code_scout)
 
@@ -30,6 +30,24 @@ cd example && flutter run                # Run example app
 flutter test                             # Run tests
 flutter analyze                          # Static analysis
 ```
+
+`test/e2e/` runs this SDK against a real dashboard and skips unless
+`CS_E2E_BASE` points at one. Start it from the server repo, which owns the
+throwaway database and port:
+
+```bash
+cd ../code_scout && make test-sdk-e2e
+```
+
+It is the only test where the wire contract is not written down on both sides:
+the logs go in through the public API and come back out of the dashboard's
+export endpoint. Two things about the host it runs on are worth knowing, since
+both failed silently the first time. `TestWidgetsFlutterBinding` installs an
+`HttpOverrides` that answers every request with 400 without opening a socket, so
+the test clears it. And `getTemporaryDirectory()` is a platform channel with
+nothing behind it here, so `PathProviderPlatform.instance` is replaced — left
+alone, the compressor throws inside the sync worker's own catch, which reports
+through `dart:developer` where the test runner never shows it.
 
 ## Architecture
 
@@ -155,8 +173,12 @@ CodeScout.instance.hideIcon();
 CodeScout.instance.toggleIcon();
 ```
 
-### Cleanup
+### Sync and cleanup
 ```dart
+// Upload what is waiting now, instead of at the next scheduled cycle.
+// Worth calling when the app is about to background, or on sign-out.
+await CodeScout.instance.flush();
+
 await CodeScout.instance.dispose();
 ```
 

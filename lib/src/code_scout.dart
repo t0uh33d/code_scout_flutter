@@ -280,6 +280,15 @@ class CodeScout {
   void f(String message, {dynamic error, StackTrace? stackTrace, Set<String>? tags, Map<String, dynamic>? metadata}) =>
       log(level: LogLevel.fatal, message: message, error: error, stackTrace: stackTrace, tags: tags, metadata: metadata);
 
+  /// Uploads whatever is waiting, now, and completes when it has landed or
+  /// failed. Normally the worker does this on its own schedule.
+  ///
+  /// Worth calling when the app is about to stop being able to: going to the
+  /// background, or signing a user out. Everything the scheduled cycle does
+  /// still applies, so a call while one is already running is not a second
+  /// upload, and nothing is deleted locally until the server has taken it.
+  Future<void> flush() => LogSyncWorker.i.flush();
+
   Future<void> dispose() async {
     LogSyncWorker.i.stop();
     await LogPersistenceService.i.close();

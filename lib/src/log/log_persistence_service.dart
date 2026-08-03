@@ -25,6 +25,14 @@ class LogPersistenceService {
     if (_initCompleter != null) return _initCompleter!.future;
 
     _initCompleter = Completer<Database>();
+    // The first caller gets its answer from the rethrow below, not from this
+    // future, so on the failure path there is often nobody listening to it —
+    // and an error delivered to a future nobody awaits is reported as an
+    // unhandled async error. That turns "the database would not open", which
+    // every caller here already handles, into a crash report from the library
+    // that is supposed to stay quiet about its own problems. Anyone who did
+    // arrive while this was in flight still sees the error.
+    _initCompleter!.future.ignore();
     try {
       _database = await _initDatabase();
       _initCompleter!.complete(_database!);

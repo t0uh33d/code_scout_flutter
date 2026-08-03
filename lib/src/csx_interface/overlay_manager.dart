@@ -83,6 +83,13 @@ class OverlayManager {
 
   void insertOverlay(OverlayEntry entry) {
     Future.delayed(const Duration(seconds: 0), () {
+      // No context means there is no widget tree to hang the button on:
+      // freshContextFetcher is optional, so an app that calls init() before it
+      // has one lands here, and so does anything headless. Everything else in
+      // the SDK works without an overlay, and this runs a turn later in the
+      // event loop where a throw is nobody's to catch.
+      if (context == null) return;
+
       if (_entries.isEmpty) {
         _entries.add(entry);
       }

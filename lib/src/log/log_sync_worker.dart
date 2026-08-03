@@ -73,6 +73,14 @@ class LogSyncWorker {
     _syncTimer = null;
   }
 
+  /// Runs one cycle now instead of waiting for the timer, and completes when
+  /// the upload has either landed or failed.
+  ///
+  /// Everything the timer does applies: an in-flight cycle is not doubled, a
+  /// server-requested backoff is still honoured, and nothing is deleted locally
+  /// until the server has taken it.
+  Future<void> flush() => _sync();
+
   /// How long the worker is currently holding off, or null when it is not.
   Duration? get backoffRemaining {
     final until = _backoffUntil;

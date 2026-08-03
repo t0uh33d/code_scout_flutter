@@ -1,3 +1,14 @@
+## 1.3.0
+
+### Fixed
+
+- **A database that will not open no longer reports an unhandled async error.** Every caller inside the SDK already handled this: the session is skipped, the log is dropped, the app carries on. A second copy of the error was also being delivered to a future nobody awaited, which Dart reports as an unhandled error — so a problem the SDK absorbed still surfaced as a crash report with Code Scout's name on it.
+- **`init()` no longer throws when there is no widget tree yet.** `freshContextFetcher` is optional, so calling `init()` early in `main()` before `runApp` is a reasonable thing to do, and it is where you want logging to start. The overlay tried to insert itself anyway, one turn of the event loop later, and threw where nothing could catch it. It now waits for a context instead. Nothing else in the SDK was affected.
+
+### Added
+
+- **`CodeScout.instance.flush()`** uploads whatever is waiting now, and completes when it has landed or failed, instead of waiting for the next scheduled cycle. Worth calling when the app is about to stop being able to: going to the background, or signing a user out. Everything the scheduled cycle does still applies, so a call while one is already running is not a second upload, and nothing is deleted locally until the server has taken it.
+
 ## 1.2.0
 
 The release that makes Code Scout usable in production: sessions, identity,
