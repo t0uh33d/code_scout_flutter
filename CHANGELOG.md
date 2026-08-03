@@ -2,8 +2,14 @@
 
 ### Fixed
 
+- **A server that does not answer at startup no longer stops the app uploading for the whole launch.** The sync worker was started only if `GET /api/validate` succeeded in the moment `init()` ran, and a failed validation was cached for the life of the process — so an app that started a second before its server did collected logs to disk and never sent them until it was restarted. Validation still runs, because its answer carries the project's sampling rate, but it no longer decides whether uploading happens. A failing upload is the sync cycle's problem, and it already knows how to wait and try again.
+- **Repeated upload failures now pause rather than stop.** Five failures in a row used to stop the worker for the rest of the launch, so a server down for a minute cost every log until the app was restarted, silently. It now goes quiet for five minutes and picks up on its own when the server comes back.
 - **A database that will not open no longer reports an unhandled async error.** Every caller inside the SDK already handled this: the session is skipped, the log is dropped, the app carries on. A second copy of the error was also being delivered to a future nobody awaited, which Dart reports as an unhandled error — so a problem the SDK absorbed still surfaced as a crash report with Code Scout's name on it.
 - **`init()` no longer throws when there is no widget tree yet.** `freshContextFetcher` is optional, so calling `init()` early in `main()` before `runApp` is a reasonable thing to do, and it is where you want logging to start. The overlay tried to insert itself anyway, one turn of the event loop later, and threw where nothing could catch it. It now waits for a context instead. Nothing else in the SDK was affected.
+
+### Changed
+
+- **The overlay's Session tab now says what is actually happening.** It showed one number labelled "Logs held", which was the size of the in-memory buffer the Logs tab draws from — a display ring that never drains, so a launch whose logs had all uploaded still read as a queue going nowhere. It now shows **In this view** (the buffer) and **Waiting to upload** (the real count on disk) separately, and the Sync line reports whether the uploader is running, paused, or has no server configured, instead of only whether credentials were set.
 
 ### Added
 

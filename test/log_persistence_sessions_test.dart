@@ -126,4 +126,30 @@ void main() {
     await LogPersistenceService.i.saveSession(session('s-1'));
     expect(await LogPersistenceService.i.getSessionsByIds([]), isEmpty);
   });
+
+  // The number the overlay shows next to "Waiting to upload". It counts what is
+  // still on disk, including a batch already marked in-flight — that batch has
+  // not arrived anywhere yet, and rows are only deleted once the server has
+  // taken them.
+  test('pendingCount counts everything still on disk', () async {
+    expect(await LogPersistenceService.i.pendingCount(), 0);
+
+    await LogPersistenceService.i.saveLogEntry(
+        LogEntry(level: LogLevel.info, message: 'one', sessionID: 's-1'));
+    await LogPersistenceService.i.saveLogEntry(
+        LogEntry(level: LogLevel.info, message: 'two', sessionID: 's-1'));
+    expect(await LogPersistenceService.i.pendingCount(), 2);
+
+    final rows = await LogPersistenceService.i.getLogEntries();
+    final ids = rows.map((r) => r['id'] as String).toList();
+
+    // Marked as syncing is still waiting: the upload can fail and roll back.
+    await LogPersistenceService.i.markAsSyncing(ids);
+    expect(await LogPersistenceService.i.pendingCount(), 2,
+        reason: 'a batch in flight has not reached the server yet');
+
+    await LogPersistenceService.i.deleteLogEntries(ids);
+    expect(await LogPersistenceService.i.pendingCount(), 0,
+        reason: 'the server took them, so nothing is waiting');
+  });
 }

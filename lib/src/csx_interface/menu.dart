@@ -2,6 +2,8 @@ import 'package:code_scout/code_scout.dart';
 import 'package:code_scout/src/csx_interface/live_pane.dart';
 import 'package:code_scout/src/csx_interface/log_buffer.dart';
 import 'package:code_scout/src/csx_interface/overlay_theme.dart';
+import 'package:code_scout/src/log/log_persistence_service.dart';
+import 'package:code_scout/src/log/log_sync_worker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -507,13 +509,24 @@ class _CallRow extends StatelessWidget {
 /// What this launch is, which is the first thing anyone reporting a bug gets
 /// asked for. Long-press to copy, because reading a UUID off a screen out loud
 /// is how bug reports end up attached to the wrong session.
-class _SessionPane extends StatelessWidget {
+class _SessionPane extends StatefulWidget {
   const _SessionPane({required this.logs});
 
   final int logs;
 
   @override
+  State<_SessionPane> createState() => _SessionPaneState();
+}
+
+class _SessionPaneState extends State<_SessionPane> {
+  /// Counted once, when the tab is opened. Starting the query inside build()
+  /// hands FutureBuilder a new future on every rebuild, which rebuilds, which
+  /// starts another — a loop that queries SQLite as fast as the app can paint.
+  late final Future<int> _pending = LogPersistenceService.i.pendingCount();
+
+  @override
   Widget build(BuildContext context) {
+    final logs = widget.logs;
     final session = CodeScout.instance.currentSession;
 
     final rows = <(String, String?)>[
@@ -523,21 +536,47 @@ class _SessionPane extends StatelessWidget {
       ('Device', _deviceLabel(session)),
       ('App', _appLabel(session)),
       ('Started', _time(session?.startedAt)),
-      ('Logs held', '$logs'),
-      (
-        'Sync',
-        CodeScout.instance.configuration.projectCredentials == null
-            ? 'local only — no server configured'
-            : 'uploading to the server'
-      ),
+      ('In this view', '$logs'),
     ];
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       children: [
         for (final row in rows) _Fact(label: row.$1, value: row.$2 ?? '—'),
+        // Read from SQLite rather than from the buffer above it. The buffer is
+        // what the Logs tab draws and it never drains, so showing its size next
+        // to the word "sync" read as a queue that was going nowhere.
+        FutureBuilder<int>(
+          future: _pending,
+          builder: (context, snapshot) => _Fact(
+            label: 'Waiting to upload',
+            value: snapshot.hasData ? '${snapshot.data}' : '—',
+          ),
+        ),
+        _Fact(label: 'Sync', value: _syncLabel()),
       ],
     );
+  }
+
+  /// What the uploader is actually doing, rather than whether a server was
+  /// configured. "Uploading to the server" was true of a worker that had given
+  /// up hours ago, which is the one moment you need this line to be honest.
+  static String _syncLabel() {
+    if (CodeScout.instance.configuration.projectCredentials == null) {
+      return 'local only — no server configured';
+    }
+    final waiting = LogSyncWorker.i.backoffRemaining;
+    if (waiting != null) {
+      final seconds = waiting.inSeconds;
+      return seconds >= 60
+          ? 'server asked for quiet, retrying in ${waiting.inMinutes}m'
+          : 'server asked for quiet, retrying in ${seconds}s';
+    }
+    if (!LogSyncWorker.i.isRunning) return 'not running';
+    final every = CodeScout.instance.configuration.sync?.syncInterval;
+    return every == null
+        ? 'uploading to the server'
+        : 'uploading every ${every.inSeconds}s';
   }
 
   static String _deviceLabel(SessionRecord? s) {

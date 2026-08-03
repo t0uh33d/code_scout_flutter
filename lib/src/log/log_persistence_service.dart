@@ -186,6 +186,19 @@ class LogPersistenceService {
         conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  /// How many logs are still on disk waiting to reach the server.
+  ///
+  /// Every row, not just the ones with sync_status = 0: a batch marked as
+  /// in-flight has not arrived anywhere yet, and rows are only deleted once the
+  /// server has taken them. This is the number the overlay should show, and it
+  /// is not the size of the in-memory buffer the overlay draws its list from —
+  /// that one is a display ring and never drains.
+  Future<int> pendingCount() async {
+    final db = await database;
+    final rows = await db.rawQuery('SELECT COUNT(*) AS c FROM logs');
+    return Sqflite.firstIntValue(rows) ?? 0;
+  }
+
   Future<List<Map<String, dynamic>>> getLogEntries({int limit = 100}) async {
     final db = await database;
 

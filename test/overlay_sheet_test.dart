@@ -151,6 +151,36 @@ void main() {
     }
   });
 
+  // The screen used to show one number labelled "Logs held" next to the word
+  // Sync. That number was the in-memory buffer the Logs tab draws from, which
+  // never drains — so a launch whose logs had all uploaded still read as nine
+  // logs stuck in a queue. Two numbers now, named for what they each are.
+  //
+  // No database is set up in this file on purpose. The count comes from SQLite,
+  // and a widget test's fake clock never completes real file I/O — so the pane
+  // has to stay usable while that number is unavailable, which is also true on
+  // a device whose database will not open.
+  testWidgets('the session tab separates what is on screen from what is queued',
+      (tester) async {
+    add('one');
+    add('two');
+    add('three');
+
+    await pumpSheet(tester);
+    await tester.tap(find.text('Session'));
+    await tester.pumpAndSettle();
+
+    // _Fact draws its label uppercased.
+    expect(find.text('IN THIS VIEW'), findsOneWidget);
+    expect(find.text('WAITING TO UPLOAD'), findsOneWidget);
+    // Scoped to the pane: the sheet header carries the same count.
+    expect(
+      find.descendant(of: find.byType(ListView), matching: find.text('3')),
+      findsOneWidget,
+      reason: 'three logs are in the buffer',
+    );
+  });
+
   testWidgets('an empty buffer explains itself', (tester) async {
     await pumpSheet(tester);
     expect(find.text('Nothing to show'), findsOneWidget);

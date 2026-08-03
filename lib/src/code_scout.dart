@@ -84,7 +84,18 @@ class CodeScout {
     await _startSession();
 
     final creds = _configuration.projectCredentials;
-    if (creds != null && await creds.valid == true) {
+    if (creds != null) {
+      // Asked, but not obeyed. The answer carries the project's sampling rate,
+      // which is why the call is here at all — and it is awaited so the draw
+      // below sees it.
+      //
+      // Starting the worker does not depend on it. A server is often a second
+      // away from being up when an app launches, and gating on this one reply
+      // meant a single unanswered request stopped the app uploading for the
+      // rest of the launch: the logs kept collecting on disk and nothing ever
+      // sent them. Failing uploads are the sync cycle's problem, and it
+      // already knows how to wait and try again.
+      await creds.valid;
       LogSyncWorker.i.start();
     }
 

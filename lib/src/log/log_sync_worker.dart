@@ -36,6 +36,11 @@ class LogSyncWorker {
   static const int _maxConsecutiveFailures = 5;
   static const Duration _uploadTimeout = Duration(seconds: 30);
 
+  /// How long to go quiet after [_maxConsecutiveFailures] in a row. Long
+  /// enough that a server which is genuinely gone is left alone, short enough
+  /// that one which comes back is picked up without restarting the app.
+  static const Duration _failureBackoff = Duration(minutes: 5);
+
   /// Used when a 429 arrives with no usable Retry-After. Twice the sync
   /// interval: long enough to be a real pause, short enough to recover.
   Duration get _defaultBackoff {
@@ -174,10 +179,18 @@ class LogSyncWorker {
         }
       }
 
-      // Back off after repeated failures
+      // Repeated failures buy quiet, not death.
+      //
+      // This used to call stop(), which ended uploading for the rest of the
+      // launch — a server down for a minute cost every log until the app was
+      // restarted, and nothing said so. The point of the counter is to stop
+      // hammering a server that is not answering, and a long pause does that
+      // while still recovering on its own when the server comes back.
       if (_consecutiveFailures >= _maxConsecutiveFailures) {
-        log('LogSyncWorker: Too many consecutive failures ($_consecutiveFailures), stopping sync.');
-        stop();
+        _backoffUntil = DateTime.now().add(_failureBackoff);
+        _consecutiveFailures = 0;
+        log('LogSyncWorker: $_maxConsecutiveFailures failures in a row, '
+            'pausing for ${_failureBackoff.inMinutes}m.');
       }
     } finally {
       // Clean up temp file
