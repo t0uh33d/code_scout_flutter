@@ -9,6 +9,7 @@ import 'package:code_scout/src/log/log_persistence_service.dart';
 import 'package:code_scout/src/log/log_sync_worker.dart';
 import 'package:code_scout/src/session/device_profile.dart';
 import 'package:code_scout/src/session/session_record.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart' show BuildContext;
 import 'package:uuid/uuid.dart';
 
@@ -81,11 +82,32 @@ class CodeScout {
 
     await _startSession();
 
-    if (_configuration.projectCredentials != null &&
-        await _configuration.projectCredentials!.valid == true) {
+    final creds = _configuration.projectCredentials;
+    if (creds != null && await creds.valid == true) {
       LogSyncWorker.i.start();
     }
+
+    // Drawn once, here, and not per log. A launch is either recorded or it is
+    // not, so its timeline is whole either way — and a sampled-out launch pays
+    // nothing after this line, since the gate sits above the SQLite write.
+    //
+    // After the credential check on purpose: that call is what fetches the
+    // project's server-side rate.
+    _sampledIn = drawSession(
+      _configuration.logging.effectiveSampleRate(creds?.serverSampleRate),
+    );
   }
+
+  bool _sampledIn = true;
+
+  /// Whether this launch is being recorded. False only when session sampling
+  /// left it out, which nothing else in the SDK ever changes mid-launch.
+  bool get isSessionSampledIn => _sampledIn;
+
+  /// A launch is normally either drawn in or out by [init]. Tests need to say
+  /// which, because a coin toss is not something to assert against.
+  @visibleForTesting
+  set isSessionSampledIn(bool value) => _sampledIn = value;
 
   /// Records this launch: which install it is, what it is running on, and when
   /// it started.

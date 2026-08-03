@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:code_scout/src/const/global_vars.dart';
 
@@ -18,7 +20,7 @@ class CodeScoutConfiguration {
   final RealTimeConfig realTime;
   final ProjectCredentials? projectCredentials;
 
-  /// What never leaves the device. On by default — see [RedactionBehavior].
+  /// What never leaves the device. Opt-in — see [RedactionBehavior].
   final RedactionBehavior redaction;
 
   LogSyncBehavior? sync;

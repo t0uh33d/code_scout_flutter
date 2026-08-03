@@ -229,6 +229,20 @@ Body keys match at any depth, including inside lists, ignoring case and separato
 
 **Body size caps are separate**, and on by default at 32 KB. That is not about secrets: a single response can be megabytes, and uploading it from a phone is a cost the person holding it pays. Oversized bodies are truncated with a note saying how much was dropped. Set `maxBodyBytes: 0` to keep everything.
 
+### Sending less from production
+
+A busy app can generate hundreds of logs per session, and you rarely need all of them from all of your users. Session sampling records a share of launches instead of every one:
+
+```dart
+LoggingBehavior(sessionSampleRate: 0.05)   // one launch in twenty
+```
+
+It samples **whole sessions, not individual logs**. A launch is either recorded or it is not, decided once when `init()` runs. That is deliberate: sampling individual logs would leave holes in a timeline, and a timeline with holes reads as your app doing nothing when really you just were not told. One in twenty complete stories is far more useful than one in twenty of every story's sentences.
+
+The rate can also be set per project in the dashboard, under project settings. The SDK reads it from the call it already makes at startup and **uses whichever rate is lower**. So you can turn the volume down from the server without shipping a release, but the server can never make your app send more than you asked for. If the server cannot be reached, your own setting stands.
+
+Sampling only affects what is stored and uploaded. The console and the in-app overlay show every log either way, so a sampled-out launch is not a launch you cannot debug on the device in front of you.
+
 ### The in-app overlay
 
 A floating button draws over your app. Tapping it opens a sheet with three tabs:
@@ -285,6 +299,7 @@ Flutter App                                Code Scout Server
 | `LoggingBehavior.includeCurrentStackTrace` | `false` | Attach stack trace to every log |
 | `LoggingBehavior.captureDeviceInfo` | `true` | Record the device model, OS name and version |
 | `LoggingBehavior.captureAppContext` | `true` | Record your app's version and build number |
+| `LoggingBehavior.sessionSampleRate` | `1.0` | Share of launches recorded. The project's server-side rate can lower this, never raise it |
 | `RedactionBehavior.headers` | `{}` | Header names to redact — nothing by default |
 | `RedactionBehavior.bodyKeys` | `{}` | Body and metadata keys to redact — nothing by default |
 | `RedactionBehavior.maxBodyBytes` | 32 KB | Bodies larger than this are truncated |

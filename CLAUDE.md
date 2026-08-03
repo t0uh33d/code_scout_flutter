@@ -221,10 +221,15 @@ Sessions outlive their logs by one step: a batch sends the session records its l
 - `setUser(id, traits:)` — opt-in identity, re-sent with every batch so a mid-session call still lands
 - Device and app context capture (`captureDeviceInfo` / `captureAppContext` are honoured)
 - In-app overlay: Logs, Network and Session tabs, reading a capped in-memory buffer so it works with no server configured
-- Published on pub.dev
+- Opt-in redaction (`RedactionBehavior`) and body size caps (32 KB)
+- Server backoff: 429/503 read `Retry-After` and pause without counting toward the auto-stop; 413 halves the batch. `lib/src/log/sync_backoff.dart`
+- Session sampling: `LoggingBehavior.sessionSampleRate`, lowered further by the project's server-side rate from `/api/validate`, drawn once per launch in `init()`. The gate is in `processLogEntry`, above the SQLite write and below the console and overlay
 
 ### Incomplete / TODO
 - Real-time log streaming and the overlay's pairing-code screen (the socket protocol is defined; there is no server for it yet)
-- Opt-in redaction (`RedactionBehavior`) and body size caps (32 KB, on by default)
-- Server backoff: 429/503 read `Retry-After` and pause without counting toward the auto-stop; 413 halves the batch. `lib/src/log/sync_backoff.dart`
-- Tests
+
+### Publishing
+
+**1.1.1 is what is on pub.dev.** Everything in the 1.2.0 changelog is unreleased: sessions, `setUser()`, the overlay, redaction, backoff and sampling. The owner publishes once Code Scout 1.0 is complete, not before.
+
+That matters when changing the wire format. The only shape that has to keep working is what 1.1.1 sends, which is a tar with a single `data.json` and nothing else. Anything added since can still be reshaped freely.

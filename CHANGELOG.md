@@ -1,5 +1,17 @@
 ## 1.2.0
 
+- **New: session sampling.** `LoggingBehavior(sessionSampleRate: 0.1)` records
+  one launch in ten instead of all of them. Whole sessions, not individual
+  logs, so a session you keep keeps its whole timeline rather than showing
+  gaps. The draw happens once at `init()`, so a launch that is left out costs
+  nothing afterwards.
+- **New:** the rate can also be set per project on the server, which the SDK
+  picks up from the call it already makes to `/api/validate` at startup. The
+  lower of the two wins, so a server can ask a noisy app to send less but can
+  never make it send more than you asked for.
+- Sampling gates what is stored and uploaded, never what you see while you
+  work: the console and the in-app overlay show every log either way.
+
 - **New: the SDK honours server backoff.** A `429` (or a `503` from a proxy) is
   now read as an instruction rather than a failure: the worker goes quiet for
   the `Retry-After` the server asked for and does not count it toward the

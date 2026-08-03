@@ -103,6 +103,12 @@ class LogEntry {
       // you with a server configured.
       LogBuffer.i.add(this);
 
+      // Sampling gates the write and nothing above it. A sampled-out launch
+      // still prints to the console and still fills the overlay, because those
+      // are free and are what you are looking at while you work — what
+      // sampling is there to reduce is rows on the server.
+      if (!CodeScout.instance.isSessionSampledIn) return;
+
       await LogPersistenceService.i.saveLogEntry(this);
     } catch (e, st) {
       log('CodeScout: Failed to process log entry: $e', stackTrace: st);

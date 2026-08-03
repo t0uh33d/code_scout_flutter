@@ -33,6 +33,13 @@ class ProjectCredentials {
 
   bool? _credsValid;
 
+  /// The project's session sampling rate as the server reports it, or null if
+  /// it has not been asked yet, could not be reached, or said nothing useful.
+  /// Null means "no opinion" and leaves the app's own rate alone.
+  double? _serverSampleRate;
+
+  double? get serverSampleRate => _serverSampleRate;
+
   Future<bool> validateCredentials() async {
     if (_credsValid != null) return _credsValid!;
 
@@ -43,6 +50,15 @@ class ProjectCredentials {
       authHeaders.forEach((k, v) => request.headers.set(k, v));
       final response = await request.close();
       _credsValid = response.statusCode == 200;
+
+      if (_credsValid!) {
+        _serverSampleRate = _readSampleRate(
+          await response.transform(utf8.decoder).join(),
+        );
+      } else {
+        // Drain it regardless, or the socket is never returned to the pool.
+        await response.drain<void>();
+      }
     } catch (e) {
       _credsValid = false;
     } finally {
@@ -50,5 +66,21 @@ class ProjectCredentials {
     }
 
     return _credsValid!;
+  }
+
+  /// Reads the rate out of the validate response, and returns null for
+  /// anything it does not recognise.
+  ///
+  /// Nothing here may throw. A server that answers with a stray proxy page
+  /// must cost this SDK its remote setting, not the app's logging.
+  static double? _readSampleRate(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is! Map) return null;
+      final rate = decoded['session_sample_rate'];
+      return rate is num ? rate.toDouble() : null;
+    } catch (_) {
+      return null;
+    }
   }
 }
