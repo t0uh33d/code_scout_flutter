@@ -15,13 +15,13 @@
 <p align="center">
   <a href="https://codescout.tech">Website</a> &middot;
   <a href="https://pub.dev/packages/code_scout">pub.dev</a> &middot;
-  <a href="https://github.com/t0uh33d/code_scout_flutter">GitHub</a> &middot;
-  <a href="https://github.com/t0uh33d/code_scout">Server</a>
+  <a href="https://github.com/getcodescout/code_scout_flutter">GitHub</a> &middot;
+  <a href="https://github.com/getcodescout/code_scout">Server</a>
 </p>
 
 ---
 
-Capture logs and network calls locally, then sync them to a self-hosted [Code Scout dashboard](https://github.com/t0uh33d/code_scout) for browsing, filtering, and real-time monitoring.
+Capture logs and network calls locally, then sync them to a self-hosted [Code Scout dashboard](https://github.com/getcodescout/code_scout) for browsing, filtering, and real-time monitoring.
 
 ## Features
 
@@ -338,7 +338,7 @@ Flutter App                                Code Scout Server
 
 ## Server Setup
 
-Code Scout needs a self-hosted server to receive logs. See the [code-scout](https://github.com/t0uh33d/code_scout) repo for setup instructions.
+Code Scout needs a self-hosted server to receive logs. See the [code-scout](https://github.com/getcodescout/code_scout) repo for setup instructions.
 
 ```bash
 # Create a project (returns project_id and secret)
