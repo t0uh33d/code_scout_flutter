@@ -1,5 +1,5 @@
 name: code_scout
-description: 'Versatile Flutter logger for development and QA. Supports console and socket-based logging, enabling remote monitoring of app behavior, API calls, and analytics without debug connections.'
+description: 'Logging and network inspection for Flutter. Structured logs, HTTP capture and an on-device viewer that need no server. Add a self-hosted dashboard when you want one.'
 version: 1.2.0
 homepage: https://codescout.tech
 repository: https://github.com/getcodescout/code_scout_flutter

@@ -1,5 +1,25 @@
 ## 1.2.0
 
+The release that makes Code Scout usable in production: sessions, identity,
+redaction, sampling, server backoff, and watching a device live while somebody
+reproduces a bug in front of you.
+
+### Upgrading from 1.1.x
+
+Nothing you already wrote needs to change. Two things are worth knowing before
+you ship it:
+
+- **Your app starts collecting more about the device.** `captureDeviceInfo` and
+  `captureAppContext` have always defaulted to `true` and always been ignored.
+  They now work — so device model, OS name and version, your app's version and
+  build number begin reaching your server, along with a random installation id
+  that is stable for the life of the install. Set either to `false` to opt out.
+  No identity is collected either way; that stays opt-in through `setUser()`.
+- **Two new dependencies:** `device_info_plus` and `package_info_plus`, for
+  exactly those fields. `provider` is no longer a dependency.
+
+### Live sessions
+
 - **New: live sessions.** Open the overlay, tap **Live**, and type the six
   character code the dashboard shows under Live devices. From then on every log
   this launch produces arrives on the dashboard as it happens. Tap **Stop
@@ -16,6 +36,8 @@
   overlay.
 - Still no new dependencies: the socket is `dart:io`'s `WebSocket`.
 
+### Session sampling
+
 - **New: session sampling.** `LoggingBehavior(sessionSampleRate: 0.1)` records
   one launch in ten instead of all of them. Whole sessions, not individual
   logs, so a session you keep keeps its whole timeline rather than showing
@@ -28,6 +50,8 @@
 - Sampling gates what is stored and uploaded, never what you see while you
   work: the console and the in-app overlay show every log either way.
 
+### Server backoff
+
 - **New: the SDK honours server backoff.** A `429` (or a `503` from a proxy) is
   now read as an instruction rather than a failure: the worker goes quiet for
   the `Retry-After` the server asked for and does not count it toward the
@@ -36,6 +60,8 @@
   rest of the process with no way back.
 - **New:** a `413` halves the batch size and retries rather than failing, growing
   back toward the configured size on success.
+
+### Redaction and body caps
 
 - **New: redaction, opt-in.** Name headers or body keys in `RedactionBehavior`
   and they are replaced at capture, before anything reaches SQLite or an upload.
@@ -49,6 +75,8 @@
   note saying how much was dropped, so one large response cannot turn into a
   large upload on someone's mobile connection.
 
+### The in-app overlay
+
 - **New:** the in-app overlay is now a real log viewer. Tapping the floating
   button opens a sheet with **Logs**, **Network** and **Session** tabs: level
   and tag filters, rows that expand to their error, stack trace and metadata,
@@ -56,8 +84,11 @@
   asked for in a bug report. It reads an in-memory buffer of the current launch,
   so it works identically with no server configured.
 - **Removed:** the overlay's raw IP/port/identifier socket form, and with it the
-  `provider` dependency. It was superseded by the pairing-code flow coming with
-  live streaming, and nothing referenced it any more.
+  `provider` dependency. It was superseded by the pairing-code flow that comes
+  with live streaming, and nothing referenced it any more.
+
+### Sessions and identity
+
 - **New:** every app launch is now recorded as a session, carrying the device
   model, OS name and version, your app's version and build number, and a random
   installation id that is stable for the life of the install. The dashboard uses
@@ -67,11 +98,10 @@
   you call it. Pass `null` on sign out. Safe to call at any point in a launch.
 - **Behaviour change:** `captureDeviceInfo` and `captureAppContext` now do
   something. Both have always defaulted to `true` and been ignored; they now
-  control whether those fields are collected.
-- **New dependencies:** `device_info_plus` and `package_info_plus`, for the
-  device model and app version respectively.
+  control whether those fields are collected. See **Upgrading** above.
 - Uploads now carry a second `sessions.json` entry alongside `data.json`. Older
-  servers read entries by name and skip what they do not recognise.
+  servers read entries by name and skip what they do not recognise, so an
+  upgraded app keeps working against a server that has not been updated.
 
 ## 1.1.1
 
