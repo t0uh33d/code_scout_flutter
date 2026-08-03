@@ -61,9 +61,12 @@ lib/
     │   └── network_data.dart            # NetworkData union type
     ├── csx_interface/
     │   ├── overlay_manager.dart         # Floating button overlay
-    │   ├── menu.dart                    # CSxInterface sheet — Logs/Network/Session tabs
+    │   ├── menu.dart                    # CSxInterface sheet — Logs/Network/Live/Session tabs
+    │   ├── live_pane.dart               # The Live tab — pairing code entry and session state
     │   ├── log_buffer.dart              # LogBuffer — capped in-memory ring the overlay reads
     │   └── overlay_theme.dart           # The dashboard's palette, for the overlay
+    ├── live/
+    │   └── live_session_client.dart     # dart:io WebSocket to the dashboard, pairing + streaming
     ├── session/
     │   ├── session_record.dart      # SessionRecord — one launch, wire + row shapes
     │   └── device_profile.dart      # Device model, OS, app version via the plus plugins
@@ -224,9 +227,10 @@ Sessions outlive their logs by one step: a batch sends the session records its l
 - Opt-in redaction (`RedactionBehavior`) and body size caps (32 KB)
 - Server backoff: 429/503 read `Retry-After` and pause without counting toward the auto-stop; 413 halves the batch. `lib/src/log/sync_backoff.dart`
 - Session sampling: `LoggingBehavior.sessionSampleRate`, lowered further by the project's server-side rate from `/api/validate`, drawn once per launch in `init()`. The gate is in `processLogEntry`, above the SQLite write and below the console and overlay
+- Live sessions: `lib/src/live/live_session_client.dart`, a `dart:io` WebSocket to `{link}api/live/socket`. Pairs with a six character code typed into the overlay's Live tab, then streams every log as it happens. `publish()` sits **above** the sampling gate in `processLogEntry` — somebody watching deliberately should see everything
 
 ### Incomplete / TODO
-- Real-time log streaming and the overlay's pairing-code screen (the socket protocol is defined; there is no server for it yet)
+- Nothing outstanding for 1.0 in the SDK.
 
 ### Publishing
 

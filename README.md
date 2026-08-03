@@ -259,6 +259,36 @@ CodeScout.instance.hideIcon();   // Hide it
 CodeScout.instance.toggleIcon(); // Toggle
 ```
 
+### Watch a device live
+
+When you need to see what a phone is doing *right now* — usually QA on one desk
+and a developer on another — pair the two:
+
+1. On the dashboard, open the project's **Live devices** and press **New session**.
+   It shows a six character code.
+2. On the phone, open the Code Scout overlay, go to the **Live** tab, type the
+   code, and press **Connect**.
+
+Every log that launch produces now arrives on the dashboard as it happens, with
+the same level filters the log viewer has. Filter to a tag, tap through a flow,
+and watch the events confirm.
+
+The session ends when you stop it, when the app closes, or when the network
+drops. Nothing streamed is stored on the server unless somebody turns on
+Persist, so this is safe to point at a build you would not want in your logs.
+
+You can drive it yourself instead of using the overlay:
+
+```dart
+final started = await CodeScout.instance.startLiveSession('4K7Q2P');
+// ...
+await CodeScout.instance.stopLiveSession();
+```
+
+`startLiveSession` never throws — a mistyped or expired code comes back as
+`false`. Sampling does not apply to a live session: if somebody is watching,
+they see everything.
+
 ### Cleanup
 
 ```dart

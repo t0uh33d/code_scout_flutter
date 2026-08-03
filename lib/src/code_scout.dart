@@ -4,6 +4,7 @@ import 'dart:developer' as dev;
 
 import 'package:code_scout/src/config/config.dart';
 import 'package:code_scout/src/csx_interface/overlay_manager.dart';
+import 'package:code_scout/src/live/live_session_client.dart';
 import 'package:code_scout/src/log/log_entry.dart';
 import 'package:code_scout/src/log/log_persistence_service.dart';
 import 'package:code_scout/src/log/log_sync_worker.dart';
@@ -135,6 +136,31 @@ class CodeScout {
       dev.log('CodeScout: could not record the session: $e', stackTrace: st);
     }
   }
+
+  /// Starts streaming this launch to the dashboard, using a code minted there.
+  ///
+  /// Returns true once the server has accepted the pairing. Never throws — a
+  /// mistyped code comes back as false with the reason in
+  /// [LiveSessionClient.i].`error`, because this is driven from a button drawn
+  /// over somebody else's running app.
+  ///
+  /// Streaming is additional, never a replacement: logs keep going to the
+  /// console, the overlay and SQLite whether or not anyone is watching, and a
+  /// live session that drops takes nothing with it.
+  Future<bool> startLiveSession(String code) {
+    return LiveSessionClient.i.start(
+      code: code,
+      configuration: _configuration,
+      currentSessionId: _currentSessionId,
+      session: _session,
+    );
+  }
+
+  /// Stops streaming. The dashboard sees the device leave.
+  Future<void> stopLiveSession() => LiveSessionClient.i.stop();
+
+  /// Whether this launch is being streamed right now.
+  bool get isLiveStreaming => LiveSessionClient.i.isLive;
 
   /// Names the person using the app. Identity is opt-in and is never inferred,
   /// so nothing appears against a session until this is called.

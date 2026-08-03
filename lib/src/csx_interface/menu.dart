@@ -1,4 +1,5 @@
 import 'package:code_scout/code_scout.dart';
+import 'package:code_scout/src/csx_interface/live_pane.dart';
 import 'package:code_scout/src/csx_interface/log_buffer.dart';
 import 'package:code_scout/src/csx_interface/overlay_theme.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +23,7 @@ class CSxInterface extends StatefulWidget {
   State<CSxInterface> createState() => _CSxInterfaceState();
 }
 
-enum _Tab { logs, network, session }
+enum _Tab { logs, network, live, session }
 
 class _CSxInterfaceState extends State<CSxInterface> {
   _Tab _tab = _Tab.logs;
@@ -127,6 +128,8 @@ class _CSxInterfaceState extends State<CSxInterface> {
                 itemCount: calls.length,
                 itemBuilder: (context, i) => _CallRow(call: calls[i]),
               );
+      case _Tab.live:
+        return const LivePane();
       case _Tab.session:
         return _SessionPane(logs: entries.length);
     }
@@ -201,6 +204,7 @@ class _Tabs extends StatelessWidget {
               label: switch (tab) {
                 _Tab.logs => 'Logs',
                 _Tab.network => 'Network',
+                _Tab.live => 'Live',
                 _Tab.session => 'Session',
               },
               active: tab == active,

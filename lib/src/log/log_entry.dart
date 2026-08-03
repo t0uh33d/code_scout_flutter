@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:code_scout/code_scout.dart';
 import 'package:code_scout/src/csx_interface/log_buffer.dart';
+import 'package:code_scout/src/live/live_session_client.dart';
 import 'package:code_scout/src/log/log_persistence_service.dart';
 import 'package:code_scout/src/log/log_printer.dart';
 import 'package:code_scout/src/utils/stack_trace_parser.dart';
@@ -102,6 +103,12 @@ class LogEntry {
       // SQLite as soon as they upload, so the overlay would empty out behind
       // you with a server configured.
       LogBuffer.i.add(this);
+
+      // Live streaming sits above the sampling gate on purpose. Somebody is
+      // watching this device right now, having deliberately paired with it —
+      // showing them a sampled-down subset of what their app is doing would
+      // make the feature useless exactly when it is being used.
+      LiveSessionClient.i.publish(this);
 
       // Sampling gates the write and nothing above it. A sampled-out launch
       // still prints to the console and still fills the overlay, because those

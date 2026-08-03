@@ -1,5 +1,21 @@
 ## 1.2.0
 
+- **New: live sessions.** Open the overlay, tap **Live**, and type the six
+  character code the dashboard shows under Live devices. From then on every log
+  this launch produces arrives on the dashboard as it happens. Tap **Stop
+  streaming**, close the app, or lose the network and the session ends — none
+  of it is stored on the server unless somebody turns on Persist.
+- Streaming is additional, never a replacement. Logs keep going to the console,
+  the overlay and SQLite whether or not anyone is watching, and a live session
+  that drops takes nothing with it.
+- Live streaming ignores session sampling on purpose: somebody has deliberately
+  paired with this device and is watching it right now, so showing them a
+  sampled subset would make the feature useless exactly when it is in use.
+- `CodeScout.instance.startLiveSession(code)` and `stopLiveSession()` are
+  available directly if you would rather drive it from your own UI than from the
+  overlay.
+- Still no new dependencies: the socket is `dart:io`'s `WebSocket`.
+
 - **New: session sampling.** `LoggingBehavior(sessionSampleRate: 0.1)` records
   one launch in ten instead of all of them. Whole sessions, not individual
   logs, so a session you keep keeps its whole timeline rather than showing
