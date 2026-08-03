@@ -16,18 +16,25 @@ Session tabs. This is a real way to use Code Scout, not a limited trial of it.
 
 ## Point it at a dashboard
 
-Create a project in your Code Scout instance, copy the id and secret from the
-last step of the wizard, and pass them in:
+Create a project in your Code Scout instance and copy the id and secret from the
+last step of the wizard. Then:
 
 ```bash
-flutter run \
-  --dart-define=CS_URL=http://localhost:24275/ \
-  --dart-define=CS_PROJECT_ID=your-project-id \
-  --dart-define=CS_PROJECT_SECRET=your-project-secret
+cp local.example.json local.json    # fill in the two values
+flutter run --dart-define-from-file=local.json
 ```
 
-Passed in rather than written down, so nothing here has to hold a secret. The
-bar under the app title tells you which mode you are in.
+`local.json` is gitignored, so nothing here ever has to hold a secret. In VS
+Code there is a launch configuration for each mode.
+
+**`CS_URL` is the setting people get wrong.** `localhost` means the device, not
+your machine, so it is right on the iOS simulator and on desktop and wrong
+everywhere else. The Android emulator reaches your machine at `10.0.2.2`, and a
+real phone needs your machine's LAN address. Android also blocks plain HTTP to
+anything but localhost from API 28 on, so a real device needs
+`android:usesCleartextTraffic="true"` in the manifest.
+
+The bar under the app title tells you which mode you are in.
 
 Logs upload every 15 seconds. **Upload now** on the Logs tab sends the batch
 immediately and waits for it, which saves waiting when you are checking that

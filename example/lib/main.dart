@@ -10,10 +10,8 @@ import 'network_screen.dart';
 /// project secret ever reaches a repository:
 ///
 /// ```
-/// flutter run \
-///   --dart-define=CS_URL=http://localhost:24275/ \
-///   --dart-define=CS_PROJECT_ID=your-project-id \
-///   --dart-define=CS_PROJECT_SECRET=your-project-secret
+/// cp local.example.json local.json   # then fill it in; local.json is gitignored
+/// flutter run --dart-define-from-file=local.json
 /// ```
 ///
 /// With none of them set the SDK stays on the device: the console printer and

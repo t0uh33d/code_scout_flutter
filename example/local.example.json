@@ -1,0 +1,7 @@
+{
+  "_": "Copy to local.json, which is gitignored, then: flutter run --dart-define-from-file=local.json",
+  "_url": "localhost works on the iOS simulator and desktop. Android emulator: http://10.0.2.2:24275/ . A real device: your machine's LAN IP.",
+  "CS_URL": "http://localhost:24275/",
+  "CS_PROJECT_ID": "the id from the last step of the project wizard",
+  "CS_PROJECT_SECRET": "the secret from the same screen"
+}

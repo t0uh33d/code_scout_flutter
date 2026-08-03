@@ -37,6 +37,9 @@ package-lock.json
 # The example app is committed so it can be cloned and run, and so pub.dev has
 # something to show on the Example tab. What the toolchain regenerates is not.
 example/pubspec.lock
+# Real project credentials for running the example against a live dashboard.
+# local.example.json is the committed template.
+example/local.json
 example/android/local.properties
 example/android/.gradle/
 example/ios/Flutter/Generated.xcconfig
