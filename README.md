@@ -306,7 +306,7 @@ Flutter App                                Code Scout Server
 │ LogPersistenceService   │  periodic     │         |               │
 │   (SQLite)              │──sync───────> │  Log ingestion          │
 │         |               │  tar.gz       │         |               │
-│ LogSyncWorker           │  X-Project-ID │  MySQL storage          │
+│ LogSyncWorker           │  X-Project-ID │  Postgres storage       │
 │ LogCompressor (isolate) │               │         |               │
 └─────────────────────────┘               │  Web Dashboard          │
                                           └─────────────────────────┘
