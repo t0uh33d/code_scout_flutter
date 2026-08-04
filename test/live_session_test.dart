@@ -52,10 +52,15 @@ void main() {
     List<Map<String, dynamic>> frames = [];
     bool accept = true;
 
+    // Lets a test push a frame *to* the device, which is what the hub does when
+    // a dashboard asks a question. Set once the socket is up.
+    void Function(String)? serverSend;
+
     setUp(() async {
       hello = null;
       frames = [];
       accept = true;
+      serverSend = null;
 
       server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       link = 'http://127.0.0.1:${server.port}/';
@@ -75,6 +80,7 @@ void main() {
         }
 
         final socket = await WebSocketTransformer.upgrade(request);
+        serverSend = socket.add;
         socket.listen((raw) {
           final message = jsonDecode(raw as String) as Map<String, dynamic>;
           if (hello == null) {
@@ -228,6 +234,77 @@ void main() {
 
     // publish() is called on every log, so it has to be free when nobody is
     // watching. This is the guard against the live path ever throwing into the
+    group('the server can ask about databases', () {
+      late Database appDb;
+
+      setUp(() async {
+        appDb = await databaseFactory.openDatabase(inMemoryDatabasePath);
+        await appDb.execute('CREATE TABLE flags (key TEXT NOT NULL, enabled INTEGER)');
+        await appDb.insert('flags', {'key': 'checkout_v2', 'enabled': 0});
+      });
+
+      tearDown(() async {
+        DatabaseRegistry.i.clear();
+        await appDb.close();
+      });
+
+      /// Sends a question down the socket the way the hub does, and waits for
+      /// the frame that comes back carrying the same request id.
+      Future<Map<String, dynamic>> ask(String op, Map<String, dynamic> args) async {
+        final before = frames.length;
+        serverSend!(jsonEncode({'req': 'r1', 'op': op, 'args': args}));
+        await _until(() => frames.length > before);
+        return frames.last;
+      }
+
+      test('a question is answered under the same request id', () async {
+        DatabaseRegistry.i.register('shop.db', CodeScoutSqflite(appDb));
+        expect(await start('4K7Q2P'), isTrue);
+
+        final reply = await ask('sources', {});
+
+        // The id is what lets the hub match this to the dashboard that asked.
+        // Without it the answer is delivered to nobody and the request times out.
+        expect(reply['req'], 'r1');
+        expect(reply['ok'], isTrue);
+        expect((reply['sources'] as List).single['name'], 'shop.db');
+      });
+
+      test('a page of rows comes back over the wire', () async {
+        DatabaseRegistry.i.register('shop.db', CodeScoutSqflite(appDb));
+        expect(await start('4K7Q2P'), isTrue);
+
+        final reply = await ask('rows', {'db': 'shop.db', 'namespace': 'flags'});
+
+        expect(reply['ok'], isTrue);
+        final page = reply['page'] as Map<String, dynamic>;
+        expect(page['rows'], hasLength(1));
+      });
+
+      test('a question the device cannot answer still gets a reply', () async {
+        expect(await start('4K7Q2P'), isTrue);
+
+        final reply = await ask('rows', {'db': 'never-registered', 'namespace': 'flags'});
+
+        // Silence would leave the dashboard waiting out its whole timeout and
+        // unable to tell a bad query from a phone that went to sleep.
+        expect(reply['req'], 'r1');
+        expect(reply['ok'], isFalse);
+      });
+
+      test('a log frame is still a log frame', () async {
+        // The req branch sits in front of the pairing branch, so this is the
+        // check that it did not swallow the traffic the socket already carried.
+        DatabaseRegistry.i.register('shop.db', CodeScoutSqflite(appDb));
+        expect(await start('4K7Q2P'), isTrue);
+
+        await CodeScout.instance.logMessage(level: LogLevel.info, message: 'still streaming');
+        await _until(() => frames.any((f) => f['logs'] != null));
+
+        expect(frames.any((f) => (f['logs'] as List?)?.isNotEmpty ?? false), isTrue);
+      });
+    });
+
     // logging path.
     test('publishing with no session is a no-op', () async {
       expect(LiveSessionClient.i.isLive, isFalse);

@@ -4,6 +4,7 @@ import 'dart:developer' as dev;
 import 'dart:io';
 
 import 'package:code_scout/src/config/config.dart';
+import 'package:code_scout/src/db/db_dispatcher.dart';
 import 'package:code_scout/src/log/log_entry.dart';
 import 'package:code_scout/src/session/session_record.dart';
 import 'package:flutter/foundation.dart';
@@ -163,6 +164,16 @@ class LiveSessionClient extends ChangeNotifier {
       return;
     }
 
+    // A frame carrying req is a question about this device's databases. It can
+    // only arrive after pairing, so it is checked before the pairing branch
+    // rather than after the early return that used to drop everything the
+    // server said once the session was live.
+    final req = message['req'];
+    if (req is String && req.isNotEmpty) {
+      _answer(req, message);
+      return;
+    }
+
     if (accepted.isCompleted) return;
 
     if (message['ok'] == true) {
@@ -178,6 +189,28 @@ class LiveSessionClient extends ChangeNotifier {
     accepted.complete(false);
     _closeSocket();
     _setState(LiveSessionState.ended);
+  }
+
+  /// Runs one question and sends the answer back under the same request id.
+  ///
+  /// Always answers, including when the command was nonsense. A dashboard that
+  /// gets no reply waits out its full timeout and then cannot tell a broken
+  /// query from a phone that went to sleep.
+  Future<void> _answer(String req, Map<String, dynamic> message) async {
+    final op = message['op'] as String? ?? '';
+    final args = (message['args'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
+
+    Map<String, dynamic> body;
+    try {
+      body = await DatabaseDispatcher.handle(op, args);
+    } catch (e) {
+      body = {'ok': false, 'error': e.toString()};
+    }
+
+    // The session can end while a query is running: a big page off a cold
+    // database takes real time, and the person watching may have closed the tab.
+    if (_state != LiveSessionState.live) return;
+    _send({...body, 'req': req});
   }
 
   /// Sends a log to whoever is watching. A no-op unless a session is live, so
