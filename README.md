@@ -60,6 +60,7 @@ credentials later, when you want them somewhere you can search.
 | [code_scout](https://pub.dev/packages/code_scout) | Core logging SDK | [![pub.dev](https://img.shields.io/pub/v/code_scout.svg)](https://pub.dev/packages/code_scout) |
 | [code_scout_dio](https://pub.dev/packages/code_scout_dio) | Dio interceptor | [![pub.dev](https://img.shields.io/pub/v/code_scout_dio.svg)](https://pub.dev/packages/code_scout_dio) |
 | [code_scout_http](https://pub.dev/packages/code_scout_http) | HTTP client wrapper | [![pub.dev](https://img.shields.io/pub/v/code_scout_http.svg)](https://pub.dev/packages/code_scout_http) |
+| [code_scout_talker](https://pub.dev/packages/code_scout_talker) | Talker observer | [![pub.dev](https://img.shields.io/pub/v/code_scout_talker.svg)](https://pub.dev/packages/code_scout_talker) |
 
 ## Getting Started
 
@@ -77,6 +78,18 @@ flutter pub add code_scout_dio
 
 # For http users
 flutter pub add code_scout_http
+```
+
+Already using [Talker](https://pub.dev/packages/talker)? Keep it. One observer
+sends everything it already logs to the dashboard as well, and none of your
+logging code changes:
+
+```bash
+flutter pub add code_scout_talker
+```
+
+```dart
+final talker = Talker(observer: const CodeScoutTalkerObserver());
 ```
 
 ## Usage
