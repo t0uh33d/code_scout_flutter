@@ -268,8 +268,6 @@ The wire format is now a published contract: a tar with `data.json`, and `sessio
 it since 1.2.0. Entries are read by name at the server, which is what lets an older SDK that sends
 only `data.json` keep working.
 
-**`code_scout_dio` 1.0.1 is NOT published.** pub.dev still has 1.0.0. The unpublished change is the
-defensive try/catch around capture, so anyone on 1.0.0 is missing that belt-and-braces layer. The
-crash it guarded against is fixed in the core (published since 1.1.1), so this is not urgent, but
-the version on disk and the version on pub.dev disagree and that is worth resolving.
-`code_scout_http` 1.0.1 is published and matches.
+**All three packages are published and match what is on disk** as of 2026-08-04: `code_scout`
+1.3.0, `code_scout_dio` 1.0.1, `code_scout_http` 1.0.1. The last gap was `code_scout_dio`, where
+pub.dev sat on 1.0.0 without the defensive try/catch around capture. Nothing is held back now.
