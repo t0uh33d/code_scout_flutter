@@ -1,3 +1,9 @@
+## 1.3.1
+
+### Changed
+
+- **The package description now leads with the dashboard.** It opened with the on-device viewer, which is the part every other logging package in this space also does, and left the self-hosted dashboard as a closing aside — in a pub.dev search result that one line is the whole pitch. It also read "an on-device viewer that need no server". No code changed.
+
 ## 1.3.0
 
 ### Fixed
