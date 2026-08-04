@@ -1,0 +1,161 @@
+name: CI
+
+# Four Dart packages live here — the SDK, the two companions and the example —
+# and each has its own pubspec. A change to the core breaks the companions
+# without touching a file in them, so all four are checked on every push.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+# A second push supersedes the first. Nothing here deploys, so cancelling a run
+# in flight costs nothing.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      # Every package is reported, rather than stopping at the first red one.
+      fail-fast: false
+      matrix:
+        package:
+          - .
+          - packages/code_scout_dio
+          - packages/code_scout_http
+          - example
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+        working-directory: ${{ matrix.package }}
+
+      # analyze before test: a type error reads better as an analyzer message
+      # than as a compile failure inside a test runner.
+      - run: flutter analyze
+        working-directory: ${{ matrix.package }}
+
+      - run: flutter test
+        working-directory: ${{ matrix.package }}
+
+  # What ends up in the archive is not what is in the repository, and the gap
+  # is easy to miss: `example/` was gitignored for months, which meant pub
+  # silently shipped a package with no example and nobody noticed until someone
+  # looked at the pub.dev page.
+  package:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - .
+          - packages/code_scout_dio
+          - packages/code_scout_http
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+        working-directory: ${{ matrix.package }}
+
+      - run: flutter pub publish --dry-run
+        working-directory: ${{ matrix.package }}
+
+  # The SDK against a real dashboard.
+  #
+  # This is the one job worth the setup. Everything above proves each side
+  # against its own idea of the contract; this proves the two still agree. It
+  # needs the server repository, so it is also the only job that can break
+  # because somebody else's repository changed — which is the point.
+  sdk-e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: code_scout
+          POSTGRES_PASSWORD: code_scout
+          POSTGRES_DB: code_scout_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U code_scout"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Into a dot directory: pub and the Flutter tool walk the tree looking
+      # for pubspecs, and ignore anything starting with a dot.
+      - uses: actions/checkout@v4
+        with:
+          repository: getcodescout/code_scout
+          path: .server
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .server/go.mod
+          cache-dependency-path: .server/go.sum
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # sqflite_common_ffi opens SQLite through dart:ffi, so the runner needs
+      # the library itself. Without it every test that touches the database
+      # fails at load with a missing symbol.
+      - name: Install SQLite
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      # No /etc/code-scout.conf here, which is fine: the loader treats the file
+      # as optional and every setting has a CS_* environment override.
+      - name: Start the dashboard
+        working-directory: .server
+        env:
+          CS_DB_HOST: 127.0.0.1
+          CS_DB_PORT: "5432"
+          CS_DB_USER: code_scout
+          CS_DB_PASSWORD: code_scout
+          CS_DB_NAME: code_scout_e2e
+          CS_PORT: "24284"
+        run: |
+          go build -o /tmp/code_scout .
+          /tmp/code_scout > /tmp/code_scout.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:24284/healthz >/dev/null && exit 0
+            sleep 0.5
+          done
+          echo "::error::The dashboard never came up."
+          cat /tmp/code_scout.log
+          exit 1
+
+      - run: flutter pub get
+
+      - name: Run the SDK against it
+        env:
+          CS_E2E_BASE: http://localhost:24284
+        run: flutter test test/e2e/
+
+      # The server's own log is the only place an ingest rejection explains
+      # itself, and a failed run is exactly when you want it.
+      - name: Dashboard log
+        if: failure()
+        run: cat /tmp/code_scout.log

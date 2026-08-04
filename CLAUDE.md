@@ -31,6 +31,13 @@ flutter test                             # Run tests
 flutter analyze                          # Static analysis
 ```
 
+CI runs `analyze` and `test` for all four packages here — the SDK, both
+companions and the example — plus `pub publish --dry-run` for the three
+publishable ones, and the cross-repo SDK e2e against a real dashboard.
+`flutter analyze` must exit 0: it fails on info-level lints too, so a lint you
+mean to break needs an `// ignore:` with a reason rather than a repo-wide
+exception.
+
 `test/e2e/` runs this SDK against a real dashboard and skips unless
 `CS_E2E_BASE` points at one. Start it from the server repo, which owns the
 throwaway database and port:

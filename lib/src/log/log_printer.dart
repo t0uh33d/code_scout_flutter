@@ -45,6 +45,12 @@ class CSxPrinter {
 
     buffer.writeln(_createDivider());
 
+    // The one deliberate print in the package. This is the console printer —
+    // printing is what it is for, and dart:developer's log() is not a
+    // substitute: it drops the ANSI colour and the multi-line framing that make
+    // a log readable in a terminal. Scoped to this line so the lint keeps
+    // working everywhere else.
+    // ignore: avoid_print
     print(buffer.toString());
   }
 
