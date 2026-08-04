@@ -28,6 +28,7 @@ jobs:
           - .
           - packages/code_scout_dio
           - packages/code_scout_http
+          - packages/code_scout_talker
           - example
     steps:
       - uses: actions/checkout@v5
@@ -45,6 +46,7 @@ jobs:
           flutter pub get
           (cd packages/code_scout_dio && flutter pub get)
           (cd packages/code_scout_http && flutter pub get)
+          (cd packages/code_scout_talker && flutter pub get)
           (cd example && flutter pub get)
 
       # analyze before test: a type error reads better as an analyzer message
@@ -68,6 +70,7 @@ jobs:
           - .
           - packages/code_scout_dio
           - packages/code_scout_http
+          - packages/code_scout_talker
     steps:
       - uses: actions/checkout@v5
 
