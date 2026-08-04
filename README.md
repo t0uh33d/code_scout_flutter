@@ -33,7 +33,7 @@ and network calls on the phone. That is a real way to use it rather than a trial
 credentials later, when you want them somewhere you can search.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/getcodescout/code_scout/main/docs/screenshots/logs.png" alt="The Code Scout dashboard" width="880" />
+  <img src="https://raw.githubusercontent.com/getcodescout/code_scout/main/.github/assets/screenshots/logs.png" alt="The Code Scout dashboard" width="880" />
 </p>
 
 <p align="center">
