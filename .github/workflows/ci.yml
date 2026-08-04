@@ -30,15 +30,22 @@ jobs:
           - packages/code_scout_http
           - example
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
-      - run: flutter pub get
-        working-directory: ${{ matrix.package }}
+      # Every package, not just this one. `flutter analyze` at the root reaches
+      # down into packages/, and without their own resolution it reports every
+      # companion symbol as undefined — 39 errors about code that is fine.
+      - name: Resolve every package
+        run: |
+          flutter pub get
+          (cd packages/code_scout_dio && flutter pub get)
+          (cd packages/code_scout_http && flutter pub get)
+          (cd example && flutter pub get)
 
       # analyze before test: a type error reads better as an analyzer message
       # than as a compile failure inside a test runner.
@@ -62,7 +69,7 @@ jobs:
           - packages/code_scout_dio
           - packages/code_scout_http
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: subosito/flutter-action@v2
         with:
@@ -72,6 +79,10 @@ jobs:
       - run: flutter pub get
         working-directory: ${{ matrix.package }}
 
+      # pub refuses to package a dirty tree, and `pub get` itself rewrites the
+      # example's generated_plugins.cmake — so anything generated has to be
+      # untracked or this fails for a reason that has nothing to do with the
+      # package.
       - run: flutter pub publish --dry-run
         working-directory: ${{ matrix.package }}
 
@@ -100,11 +111,11 @@ jobs:
           --health-retries 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Into a dot directory: pub and the Flutter tool walk the tree looking
       # for pubspecs, and ignore anything starting with a dot.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: getcodescout/code_scout
           path: .server
@@ -138,9 +149,12 @@ jobs:
           CS_PORT: "24284"
         run: |
           go build -o /tmp/code_scout .
-          /tmp/code_scout > /tmp/code_scout.log 2>&1 &
+          # nohup and disown: the server has to outlive the step that starts it,
+          # and a shell exiting can take an ordinary background child with it.
+          nohup /tmp/code_scout > /tmp/code_scout.log 2>&1 &
+          disown
           for i in $(seq 1 60); do
-            curl -sf http://localhost:24284/healthz >/dev/null && exit 0
+            curl -sf http://127.0.0.1:24284/healthz >/dev/null && exit 0
             sleep 0.5
           done
           echo "::error::The dashboard never came up."
@@ -149,9 +163,19 @@ jobs:
 
       - run: flutter pub get
 
+      # Checked again here so a server that died between steps fails with that
+      # sentence, rather than as a confusing "sign in failed" inside the test.
+      - name: Check the dashboard is still up
+        run: |
+          curl -sf http://127.0.0.1:24284/healthz || {
+            echo "::error::The dashboard stopped before the tests ran."
+            cat /tmp/code_scout.log
+            exit 1
+          }
+
       - name: Run the SDK against it
         env:
-          CS_E2E_BASE: http://localhost:24284
+          CS_E2E_BASE: http://127.0.0.1:24284
         run: flutter test test/e2e/
 
       # The server's own log is the only place an ingest rejection explains

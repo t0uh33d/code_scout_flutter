@@ -50,3 +50,7 @@ example/macos/Flutter/Flutter-Generated.xcconfig
 **/Pods/
 **/.symlinks/
 **/xcuserdata/
+# Rewritten by every `flutter pub get` from the current plugin list, so keeping
+# it tracked means a clean checkout is dirty the moment anyone resolves — which
+# `pub publish` refuses to package.
+example/*/flutter/generated_plugins.cmake
