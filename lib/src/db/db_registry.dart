@@ -89,6 +89,38 @@ class DatabaseRegistry {
 
   RegisteredSource? find(String name) => _sources[name];
 
+  /// Reads a page from a registered source.
+  ///
+  /// Goes through the registration rather than straight to the source, so an
+  /// unregistered name is refused in one place instead of in every caller.
+  Future<CodeScoutPage> read(String name, CodeScoutReadRequest request) {
+    final entry = _sources[name];
+    if (entry == null) {
+      throw ArgumentError.value(name, 'name', 'no database is registered under that name');
+    }
+    return entry.source.read(request);
+  }
+
+  /// Changes one cell in a registered source.
+  ///
+  /// **This is where [RegisteredSource.writable] is enforced.** The flag would
+  /// otherwise be decoration: a source exposed for inspection would be just as
+  /// editable as one exposed for editing, and the difference would live only in
+  /// what the dashboard chose to render.
+  Future<CodeScoutWriteResult> write(String name, CodeScoutWriteRequest request) {
+    final entry = _sources[name];
+    if (entry == null) {
+      throw ArgumentError.value(name, 'name', 'no database is registered under that name');
+    }
+    if (!entry.writable) {
+      return Future.value(const CodeScoutWriteResult.refused(
+        'This database was registered for browsing only. '
+        'Pass writable: true when registering it to allow changes.',
+      ));
+    }
+    return entry.source.write(request);
+  }
+
   /// Forgets everything. For tests, and for an app that tears Code Scout down.
   void clear() => _sources.clear();
 }

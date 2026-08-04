@@ -1,3 +1,5 @@
+import 'package:code_scout/src/db/db_value.dart';
+
 /// What kind of store is behind a registered source.
 ///
 /// The dashboard renders both in the same grid: a key-value store is shown as a
@@ -98,6 +100,150 @@ class CodeScoutSchema {
       };
 }
 
+/// A page of rows to fetch.
+///
+/// Structure, never SQL. The dashboard names a table, a page, a sort and some
+/// filters; the device builds the statement. That is what makes read-only a
+/// property of the code rather than a rule somebody has to enforce, because no
+/// other statement can be constructed from these fields.
+class CodeScoutReadRequest {
+  const CodeScoutReadRequest({
+    required this.namespace,
+    this.limit = 100,
+    this.offset = 0,
+    this.sortColumn,
+    this.descending = false,
+    this.filters = const {},
+  });
+
+  final String namespace;
+  final int limit;
+  final int offset;
+
+  /// Must name a real column, checked against the schema before use.
+  final String? sortColumn;
+  final bool descending;
+
+  /// Column name to the text typed under it. Matched as a contained substring,
+  /// one rule for every type, because the alternative is an expression language
+  /// and therefore a parser on the device.
+  final Map<String, String> filters;
+
+  factory CodeScoutReadRequest.fromJson(Map<String, dynamic> j) => CodeScoutReadRequest(
+        namespace: j['namespace'] as String,
+        limit: (j['limit'] as num?)?.toInt() ?? 100,
+        offset: (j['offset'] as num?)?.toInt() ?? 0,
+        sortColumn: j['sort'] as String?,
+        descending: j['desc'] as bool? ?? false,
+        filters: (j['filters'] as Map?)?.map((k, v) => MapEntry('$k', '$v')) ?? const {},
+      );
+}
+
+/// One page of rows.
+class CodeScoutPage {
+  const CodeScoutPage({
+    required this.columns,
+    required this.rows,
+    required this.handles,
+    required this.hasMore,
+    this.stoppedForSize = false,
+  });
+
+  final List<CodeScoutColumn> columns;
+
+  /// Row-major, parallel to [columns]. Lists rather than maps because the
+  /// column names are already in the header and repeating them on every row is
+  /// most of the bytes in a page.
+  final List<List<CellValue>> rows;
+
+  /// What identifies each row, parallel to [rows]. Null throughout when the
+  /// namespace has no row handle.
+  final List<Object?> handles;
+
+  final bool hasMore;
+
+  /// True when the page ended because it was getting too big to send, rather
+  /// than because the rows ran out. Said out loud because a page that quietly
+  /// stops short reads as "that is all there is".
+  final bool stoppedForSize;
+
+  Map<String, dynamic> toJson() => {
+        'columns': columns.map((c) => c.toJson()).toList(),
+        'rows': rows.map((r) => r.map((c) => c.toJson()).toList()).toList(),
+        'handles': handles,
+        'has_more': hasMore,
+        'stopped_for_size': stoppedForSize,
+      };
+}
+
+/// A change to exactly one cell.
+///
+/// One column, one row, one value. There is no shape here that can express
+/// anything wider, which is the point: an UPDATE with no WHERE cannot be
+/// requested because there is nowhere to put it.
+class CodeScoutWriteRequest {
+  const CodeScoutWriteRequest({
+    required this.namespace,
+    required this.column,
+    required this.handle,
+    required this.value,
+    required this.was,
+  });
+
+  final String namespace;
+  final String column;
+
+  /// The row handle's value, usually a rowid.
+  final Object? handle;
+
+  /// What to store, as typed. Null means SQL NULL.
+  final String? value;
+
+  /// The value the dashboard was displaying, carried so a row the app has
+  /// changed underneath rejects the write instead of being overwritten.
+  final Object? was;
+
+  factory CodeScoutWriteRequest.fromJson(Map<String, dynamic> j) => CodeScoutWriteRequest(
+        namespace: j['namespace'] as String,
+        column: j['column'] as String,
+        handle: j['handle'],
+        value: j['value'] as String?,
+        was: j['was'],
+      );
+}
+
+/// How a write went.
+class CodeScoutWriteResult {
+  const CodeScoutWriteResult._(this.ok, {this.code, this.message, this.current});
+
+  const CodeScoutWriteResult.written() : this._(true);
+
+  /// The row is there but does not hold what the dashboard was shown, so the
+  /// app changed it first. Nothing was written, and [current] is what it holds
+  /// now.
+  const CodeScoutWriteResult.rowChanged(Object? current)
+      : this._(false, code: 'row_changed', current: current);
+
+  const CodeScoutWriteResult.rowGone()
+      : this._(false,
+            code: 'row_gone', message: 'That row is no longer in the table.');
+
+  const CodeScoutWriteResult.refused(String why)
+      : this._(false, code: 'refused', message: why);
+
+  final bool ok;
+  final String? code;
+  final String? message;
+  final Object? current;
+
+  Map<String, dynamic> toJson() => {
+        'ok': ok,
+        if (code != null) 'code': code,
+        if (message != null) 'message': message,
+        if (current != null) 'current': current,
+      };
+}
+
 /// Something Code Scout can browse on the device.
 ///
 /// Implement this to expose a store the built-in adapters do not cover. Nothing
@@ -113,4 +259,10 @@ abstract class CodeScoutSource {
 
   /// The columns of one namespace, and whether its rows can be addressed.
   Future<CodeScoutSchema> describe(String namespace);
+
+  /// One page of rows.
+  Future<CodeScoutPage> read(CodeScoutReadRequest request);
+
+  /// Changes one cell. Only ever reached for a source registered writable.
+  Future<CodeScoutWriteResult> write(CodeScoutWriteRequest request);
 }

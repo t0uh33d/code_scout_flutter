@@ -103,7 +103,7 @@ class Redactor {
 
     // Cut on a character boundary, not a byte one, or the tail is mojibake.
     final kept = utf8.decode(bytes.sublist(0, cfg.maxBodyBytes), allowMalformed: true);
-    return '$kept\n\n… truncated by Code Scout — ${_size(bytes.length)} total';
+    return '$kept\n\n… truncated by Code Scout — ${formatSize(bytes.length)} total';
   }
 
   static String? _encode(Object? value) {
@@ -115,7 +115,9 @@ class Redactor {
     }
   }
 
-  static String _size(int bytes) {
+  /// Bytes as a person reads them: "42.1 KB". Shared with the database browser
+  /// so a blob and a truncated body are sized the same way.
+  static String formatSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';

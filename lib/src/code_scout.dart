@@ -336,6 +336,11 @@ class CodeScout {
     DatabaseRegistry.i.clear();
     LogSyncWorker.i.stop();
     await LogPersistenceService.i.close();
+    // Back to defaults, not left as they were. Everything else here is
+    // released, and a configuration that outlives its dispose means redaction
+    // rules from a torn-down instance still apply to the next one until it
+    // gets around to setting its own.
+    _configuration = CodeScoutConfiguration();
     _isInitialized = false;
   }
 
