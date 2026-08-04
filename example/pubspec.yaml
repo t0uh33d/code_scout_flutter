@@ -37,6 +37,17 @@ dependencies:
   code_scout_http:
     path: ../packages/code_scout_http
   dio: ^5.9.2
+  # The example's own database, so registerDatabase has something real to
+  # offer up. Code Scout depends on sqflite for its own log store, but an app
+  # naming it here is what a real one would do.
+  sqflite: ^2.4.2
+  path: ^1.9.1
+  # The other two shapes Code Scout can browse. Neither is a dependency of the
+  # SDK: CodeScoutKeyValue takes closures, so an app wires up whatever it
+  # already uses and nothing is forced on anyone who does not.
+  shared_preferences: ^2.5.5
+  path_provider: ^2.1.5
+  hive_ce: ^2.19.3
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

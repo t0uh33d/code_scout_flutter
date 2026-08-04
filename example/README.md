@@ -55,6 +55,21 @@ call is captured in three phases correlated by one request id, and the dashboard
 pairs them back into one row. The last button calls a host that does not resolve,
 so you can see the error phase next to the successes.
 
+**Data.** A real SQLite database the example opens for itself and hands to Code
+Scout with `registerDatabase`. Feature flags, a cart, and an account row whose
+`auth_token` is redacted so you can see the dashboard show `[redacted]` rather
+than the value.
+
+Start a live session on the dashboard, type the code into the floating button,
+and open the **Database** tab there. You can browse every table, and edit a cell
+because this registration passes `writable: kDebugMode`.
+
+Then come back to this screen. **Nothing you changed will have moved until you
+press Reload**, and that is the point of the screen: the app read those rows
+into memory when it built the view and has no idea the file changed underneath
+it. Every app behaves this way, which is why the dashboard says so after a
+write. Watching it once explains it better than the warning does.
+
 ## Testing an app that uses Code Scout
 
 `test/widget_test.dart` boots the whole example under `flutter_test`. Two things

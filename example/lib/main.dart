@@ -1,6 +1,8 @@
 import 'package:code_scout/code_scout.dart';
 import 'package:flutter/material.dart';
 
+import 'data_screen.dart';
+import 'demo_stores.dart';
 import 'logs_screen.dart';
 import 'network_screen.dart';
 
@@ -61,6 +63,7 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   int _tab = 0;
+  DemoStores? _stores;
 
   @override
   void initState() {
@@ -87,7 +90,14 @@ class _HomeState extends State<Home> {
           redaction: RedactionBehavior.recommended(),
         ),
       );
-      if (mounted) setState(() {});
+
+      // Offer everything this app stores locally, so a live session can browse
+      // it from the dashboard. Nothing is browsable until this is called, and
+      // nothing is editable without writable — a store exposed to look at has
+      // not thereby been exposed to change.
+      final stores = await DemoStores.openAndRegister();
+
+      if (mounted) setState(() => _stores = stores);
     });
   }
 
@@ -100,7 +110,11 @@ class _HomeState extends State<Home> {
       ),
       body: IndexedStack(
         index: _tab,
-        children: const [LogsScreen(), NetworkScreen()],
+        children: [
+          const LogsScreen(),
+          const NetworkScreen(),
+          DataScreen(stores: _stores),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
@@ -108,6 +122,7 @@ class _HomeState extends State<Home> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.notes), label: 'Logs'),
           NavigationDestination(icon: Icon(Icons.swap_vert), label: 'Network'),
+          NavigationDestination(icon: Icon(Icons.table_rows), label: 'Data'),
         ],
       ),
     );

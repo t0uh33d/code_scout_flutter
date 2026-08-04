@@ -9,3 +9,4 @@ export 'src/utils/redactor.dart';
 export 'src/db/db_source.dart';
 export 'src/db/db_registry.dart';
 export 'src/db/sqflite_source.dart';
+export 'src/db/key_value_source.dart';
