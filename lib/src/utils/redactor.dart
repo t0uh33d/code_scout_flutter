@@ -57,6 +57,19 @@ class Redactor {
     return walked is Map<String, dynamic> ? walked : raw;
   }
 
+  /// True when the redaction config names this key, matched the same way body
+  /// keys are: case- and separator-insensitively, so `auth_token`, `authToken`
+  /// and `Auth-Token` are one name.
+  ///
+  /// Used for database column names, which are exactly the same problem as body
+  /// keys and deserve exactly the same answer rather than a second matcher that
+  /// drifts from this one.
+  static bool hides(String name, [RedactionBehavior? config]) {
+    final cfg = config ?? _config;
+    if (cfg.bodyKeys.isEmpty) return false;
+    return cfg.bodyKeyNames.contains(RedactionBehavior.normaliseKey(name));
+  }
+
   static Object? _walk(Object? value, Set<String> redact) {
     if (value is Map) {
       final out = <String, dynamic>{};

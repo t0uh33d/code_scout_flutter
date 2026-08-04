@@ -4,6 +4,8 @@ import 'dart:developer' as dev;
 
 import 'package:code_scout/src/config/config.dart';
 import 'package:code_scout/src/csx_interface/overlay_manager.dart';
+import 'package:code_scout/src/db/db_registry.dart';
+import 'package:code_scout/src/db/db_source.dart';
 import 'package:code_scout/src/live/live_session_client.dart';
 import 'package:code_scout/src/log/log_entry.dart';
 import 'package:code_scout/src/log/log_persistence_service.dart';
@@ -300,7 +302,38 @@ class CodeScout {
   /// upload, and nothing is deleted locally until the server has taken it.
   Future<void> flush() => LogSyncWorker.i.flush();
 
+  /// Offers a database up for browsing from the dashboard while this device is
+  /// in a live session.
+  ///
+  /// ```dart
+  /// CodeScout.instance.registerDatabase(
+  ///   'shop.db',
+  ///   CodeScoutSqflite(db),
+  ///   writable: kDebugMode,
+  /// );
+  /// ```
+  ///
+  /// Nothing is browsable until you call this, and nothing is editable unless
+  /// you also pass [writable]. Ignored in release builds unless
+  /// [allowInRelease] is set.
+  ///
+  /// Browsing needs a live session, because the database is on the phone and
+  /// nowhere else. Nothing about it is uploaded or stored on the server.
+  void registerDatabase(
+    String name,
+    CodeScoutSource source, {
+    bool writable = false,
+    bool allowInRelease = false,
+  }) =>
+      DatabaseRegistry.i.register(
+        name,
+        source,
+        writable: writable,
+        allowInRelease: allowInRelease,
+      );
+
   Future<void> dispose() async {
+    DatabaseRegistry.i.clear();
     LogSyncWorker.i.stop();
     await LogPersistenceService.i.close();
     _isInitialized = false;
