@@ -184,6 +184,15 @@ void main() {
     expect(launched!.installationId, isNotNull,
         reason: 'no installation id, so DeviceProfile or the meta table failed');
 
+    // Local first, then remote. The two together say which side lost it: a row
+    // here and nothing on the dashboard means the upload or the server dropped
+    // it; nothing here means the SDK never had one to send. A successful sync
+    // keeps the running launch's row, so it is still expected to be present.
+    final local = await LogPersistenceService.i.getSessionsByIds([launched!.id]);
+    expect(local, isNotEmpty,
+        reason: 'the SDK has no session row for this launch, so sessions.json '
+            'was never in the archive. Session it built: ${launched!.toJson()}');
+
     final byInstall =
         await dash.exportLogs(query: 'installation:${launched!.installationId}');
     expect(byInstall, isNotEmpty,

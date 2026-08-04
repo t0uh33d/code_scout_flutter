@@ -180,6 +180,13 @@ jobs:
 
       # The server's own log is the only place an ingest rejection explains
       # itself, and a failed run is exactly when you want it.
+      # Session upserts are deliberately not fatal to an upload — the logs are
+      # the payload and the session is context — so a failure there is only ever
+      # a line in this log. Promoted to an annotation so it shows in the run
+      # summary rather than needing the step expanded.
       - name: Dashboard log
         if: failure()
-        run: cat /tmp/code_scout.log
+        run: |
+          grep -iE "session|error" /tmp/code_scout.log | tail -20 |
+            while IFS= read -r line; do echo "::error::$line"; done
+          cat /tmp/code_scout.log
