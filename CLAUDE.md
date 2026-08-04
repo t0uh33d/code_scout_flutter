@@ -263,6 +263,13 @@ Sessions outlive their logs by one step: a batch sends the session records its l
 
 ### Publishing
 
-**1.1.1 is what is on pub.dev.** Everything in the 1.2.0 changelog is unreleased: sessions, `setUser()`, the overlay, redaction, backoff and sampling. The owner publishes once Code Scout 1.0 is complete, not before.
+**1.3.0 is what is on pub.dev**, so everything documented here is released and in people's apps.
+The wire format is now a published contract: a tar with `data.json`, and `sessions.json` alongside
+it since 1.2.0. Entries are read by name at the server, which is what lets an older SDK that sends
+only `data.json` keep working.
 
-That matters when changing the wire format. The only shape that has to keep working is what 1.1.1 sends, which is a tar with a single `data.json` and nothing else. Anything added since can still be reshaped freely.
+**`code_scout_dio` 1.0.1 is NOT published.** pub.dev still has 1.0.0. The unpublished change is the
+defensive try/catch around capture, so anyone on 1.0.0 is missing that belt-and-braces layer. The
+crash it guarded against is fixed in the core (published since 1.1.1), so this is not urgent, but
+the version on disk and the version on pub.dev disagree and that is worth resolving.
+`code_scout_http` 1.0.1 is published and matches.

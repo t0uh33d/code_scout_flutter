@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://codescout.tech/docs/
+    about: Setup, configuration and the guides.
+  - name: Dashboard issues
+    url: https://github.com/getcodescout/code_scout/issues
+    about: Anything about the server or the web dashboard belongs there.
+  - name: Security
+    url: https://github.com/getcodescout/code_scout_flutter/security/advisories/new
+    about: Please report vulnerabilities privately, not as an issue.

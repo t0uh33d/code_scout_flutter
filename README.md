@@ -21,20 +21,37 @@
 
 ---
 
-Capture logs and network calls locally, then sync them to a self-hosted [Code Scout dashboard](https://github.com/getcodescout/code_scout) for browsing, filtering, and real-time monitoring.
+Capture logs and network calls on the device, then sync them to a self-hosted
+[Code Scout dashboard](https://github.com/getcodescout/code_scout) for searching, filtering and
+watching a device live.
+
+This is not a crash reporter. Crashlytics tells you the app crashed. Code Scout shows you what it
+was doing for the five minutes before. Plenty of teams run both.
+
+**You do not need a server to start.** Add the package, tap the floating button, and read your logs
+and network calls on the phone. That is a real way to use it rather than a trial version. Add
+credentials later, when you want them somewhere you can search.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/getcodescout/code_scout/main/docs/screenshots/logs.png" alt="The Code Scout dashboard" width="880" />
+</p>
+
+<p align="center">
+  <em>Where your logs end up, if you point it at a dashboard.</em>
+</p>
 
 ## Features
 
 - **Structured logging** with levels (debug, info, warning, error, fatal), tags, and metadata
-- **Network interception** for Dio and `http` — correlates request, response, and error by request ID
-- **Backs off when told to** — a throttled or busy server is honoured, not retried into the ground
-- **Redaction you control** — name what to strip and it never reaches disk or the network; name nothing and you see exactly what your app sent
-- **Sessions and devices** — every app launch is recorded with the device it ran on and the build it was, so you can ask what happened on one phone
+- **Network interception** for Dio and `http`. Correlates request, response, and error by request ID
+- **Backs off when told to**. A throttled or busy server is honoured, not retried into the ground
+- **Redaction you control**. Name what to strip and it never reaches disk or the network; name nothing and you see exactly what your app sent
+- **Sessions and devices**. Every app launch is recorded with the device it ran on and the build it was, so you can ask what happened on one phone
 - **Local persistence** in SQLite so logs survive app restarts
-- **Automatic batch sync** — compresses logs to tar.gz and uploads on a configurable interval
-- **Zero third-party HTTP deps** — all server communication uses `dart:io`
-- **In-app overlay** — read your logs and network calls on the device, with no server needed at all
-- **Lightweight** — designed to add minimal overhead to your app
+- **Automatic batch sync**. Compresses logs to tar.gz and uploads on a configurable interval
+- **Zero third-party HTTP deps**. All server communication uses `dart:io`
+- **In-app overlay**. Read your logs and network calls on the device, with no server needed at all
+- **Lightweight**, designed to add minimal overhead to your app
 
 ## Packages
 
@@ -183,16 +200,16 @@ Alongside the id and the user, each session carries the device it ran on and the
 
 | Field | Where it comes from |
 |-------|---------------------|
-| Device model | `device_info_plus` — "Pixel 7", "iPhone 15 Pro" |
+| Device model | `device_info_plus`, for example "Pixel 7", "iPhone 15 Pro" |
 | OS name and version | "Android 14", "iOS 17.4" |
-| App version and build | `package_info_plus` — "3.11.2+418" |
+| App version and build | `package_info_plus`, for example "3.11.2+418" |
 | Installation id | A random value written once and kept for the life of the install |
 
 The installation id is what lets the dashboard group launches by phone. It is generated locally, carries nothing personal, and goes away when the app is uninstalled. Set `captureDeviceInfo: false` or `captureAppContext: false` on `LoggingBehavior` to leave either group out.
 
 ### Redaction
 
-Redaction is **opt-in**. Out of the box Code Scout records what your app sent, unchanged — because this is a debugging tool, and the token is sometimes the exact reason a request is failing.
+Redaction is **opt-in**. Out of the box Code Scout records what your app sent, unchanged, because this is a debugging tool, and the token is sometimes the exact reason a request is failing.
 
 Name what you want stripped and it is replaced at capture, before the log reaches SQLite, so it is never written to disk or uploaded:
 
@@ -212,7 +229,7 @@ authorization  ••••••  redacted on the device
 content-type   application/json
 ```
 
-There are two lists of the usual suspects — `RedactionBehavior.commonHeaders` and `RedactionBehavior.commonBodyKeys` — so you do not have to type them. They do nothing until you ask for them:
+There are two lists of the usual suspects, `RedactionBehavior.commonHeaders` and `RedactionBehavior.commonBodyKeys`, so you do not have to type them. They do nothing until you ask for them:
 
 ```dart
 // The common lists, plus your own
@@ -225,7 +242,7 @@ RedactionBehavior(
 )
 ```
 
-Body keys match at any depth, including inside lists, ignoring case and separators — so one `access_token` entry covers `accessToken` and `Access-Token` too. Header names match case-insensitively.
+Body keys match at any depth, including inside lists, ignoring case and separators, so one `access_token` entry covers `accessToken` and `Access-Token` too. Header names match case-insensitively.
 
 **Body size caps are separate**, and on by default at 32 KB. That is not about secrets: a single response can be megabytes, and uploading it from a phone is a cost the person holding it pays. Oversized bodies are truncated with a note saying how much was dropped. Set `maxBodyBytes: 0` to keep everything.
 
@@ -247,9 +264,9 @@ Sampling only affects what is stored and uploaded. The console and the in-app ov
 
 A floating button draws over your app. Tapping it opens a sheet with three tabs:
 
-- **Logs** — everything this launch has logged, newest first, with the same level and tag filters the dashboard has. Tap a row to see its error, stack trace and metadata.
-- **Network** — request, response and error paired into one row per call, with the status and how long it took.
-- **Session** — the session id, installation id, device, app version and user. Long-press any of them to copy, which is what you want when filing a bug.
+- **Logs**. Everything this launch has logged, newest first, with the same level and tag filters the dashboard has. Tap a row to see its error, stack trace and metadata.
+- **Network**. Request, response and error paired into one row per call, with the status and how long it took.
+- **Session**. The session id, installation id, device, app version and user. Long-press any of them to copy, which is what you want when filing a bug.
 
 It reads an in-memory buffer of the current launch rather than the server, so **it works with no server configured at all**. Drop the package in, tap the button, read your logs.
 
@@ -261,8 +278,8 @@ CodeScout.instance.toggleIcon(); // Toggle
 
 ### Watch a device live
 
-When you need to see what a phone is doing *right now* — usually QA on one desk
-and a developer on another — pair the two:
+When you need to see what a phone is doing *right now*, usually QA on one desk
+and a developer on another, pair the two:
 
 1. On the dashboard, open the project's **Live devices** and press **New session**.
    It shows a six character code.
@@ -285,7 +302,7 @@ final started = await CodeScout.instance.startLiveSession('4K7Q2P');
 await CodeScout.instance.stopLiveSession();
 ```
 
-`startLiveSession` never throws — a mistyped or expired code comes back as
+`startLiveSession` never throws. A mistyped or expired code comes back as
 `false`. Sampling does not apply to a live session: if somebody is watching,
 they see everything.
 
@@ -316,7 +333,7 @@ Flutter App                                Code Scout Server
 2. A periodic timer picks up unsync'd logs, marks them as syncing, compresses them in a background isolate, and uploads via `dart:io`
 3. On success, logs are deleted locally. On failure, they're rolled back and retried next cycle
 4. After 5 consecutive failures the sync worker stops automatically to avoid battery drain
-5. A `429` or `503` is not a failure. The worker reads `Retry-After`, goes quiet for that long, and resumes — it never counts toward the auto-stop, so a server protecting itself can never permanently silence an SDK
+5. A `429` or `503` is not a failure. The worker reads `Retry-After`, goes quiet for that long, and resumes. It never counts toward the auto-stop, so a server protecting itself can never permanently silence an SDK
 6. A `413` halves the batch and retries, growing back on success
 
 ## Configuration
@@ -330,34 +347,47 @@ Flutter App                                Code Scout Server
 | `LoggingBehavior.captureDeviceInfo` | `true` | Record the device model, OS name and version |
 | `LoggingBehavior.captureAppContext` | `true` | Record your app's version and build number |
 | `LoggingBehavior.sessionSampleRate` | `1.0` | Share of launches recorded. The project's server-side rate can lower this, never raise it |
-| `RedactionBehavior.headers` | `{}` | Header names to redact — nothing by default |
-| `RedactionBehavior.bodyKeys` | `{}` | Body and metadata keys to redact — nothing by default |
+| `RedactionBehavior.headers` | `{}` | Header names to redact. Nothing by default |
+| `RedactionBehavior.bodyKeys` | `{}` | Body and metadata keys to redact. Nothing by default |
 | `RedactionBehavior.maxBodyBytes` | 32 KB | Bodies larger than this are truncated |
 | `LogSyncBehavior.syncInterval` | 5 minutes | How often to sync |
 | `LogSyncBehavior.maxBatchSize` | 100 | Max logs per upload |
 
-## Server Setup
+## Setting up a server
 
-Code Scout needs a self-hosted server to receive logs. See the [code-scout](https://github.com/getcodescout/code_scout) repo for setup instructions.
+Only needed if you want a dashboard. Without one the SDK still prints to the console and fills the
+on-device viewer.
 
 ```bash
-# Create a project (returns project_id and secret)
-curl -X POST http://localhost:24275/api/project \
-  -H "Content-Type: application/json" \
-  -d '{"name": "My App", "description": "Production logs"}'
+git clone https://github.com/getcodescout/code_scout.git
+cd code_scout
+docker compose up
 ```
 
-Use the returned `project_id` and `secret_key` in your `ProjectCredentials`.
+Open <http://localhost:24275>, register the first account, and create a project. The project ID and
+secret appear on the last step of the wizard, and you can read the secret again later under
+**Settings → SDK setup**. Put both into `ProjectCredentials`.
+
+Full instructions: [codescout.tech/docs](https://codescout.tech/docs/) and the
+[dashboard repository](https://github.com/getcodescout/code_scout).
 
 ## Contributing
 
-Contributions are welcome! This is a free and open-source project.
+Pull requests are welcome. Small ones are the easiest to accept, and for anything large please open
+an issue first so we can check it fits.
 
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feature/my-feature`)
-3. Make your changes and run `flutter analyze` to ensure there are no issues
-4. Submit a pull request
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to get set up, how to run the tests across all four
+packages, and the two analyzer traps that catch everyone the first time.
+
+Every change ships with a test, and the honest way to check one is to undo the fix and watch the
+test fail.
+
+## Security
+
+Please report vulnerabilities privately rather than as an issue. See [SECURITY.md](SECURITY.md),
+which also explains the things that look like bugs but are deliberate, such as nothing being
+redacted unless your app asks.
 
 ## License
 
-This project is open source. See the [LICENSE](LICENSE) file for details.
+MIT. See [LICENSE](LICENSE).
