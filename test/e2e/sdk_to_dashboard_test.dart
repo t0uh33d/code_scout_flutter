@@ -43,6 +43,9 @@ void main() {
 
   final dash = _Dashboard(env.endsWith('/') ? env : '$env/');
   final requestID = const Uuid().v4();
+  // Captured in setUpAll so the assertions below can say which session they
+  // expected, rather than only that they found nothing.
+  SessionRecord? launched;
 
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -130,6 +133,8 @@ void main() {
 
     // The network pair is fire-and-forget — the manager does not await the
     // SQLite write — so wait for the rows rather than guessing at a delay.
+    launched = CodeScout.instance.currentSession;
+
     await _awaitStored(4);
     await LogSyncWorker.i.flush();
   });
@@ -171,11 +176,28 @@ void main() {
     expect(calls.map((c) => c['call_phase']).toSet(), {'request', 'response'});
   });
 
+  // Runs before the three that filter on session fields, because it separates
+  // "the session never arrived" from "it arrived without this field". Both look
+  // identical from a query that returns nothing.
+  test('the launch itself reaches the dashboard', () async {
+    expect(launched, isNotNull, reason: 'the SDK never recorded a session locally');
+    expect(launched!.installationId, isNotNull,
+        reason: 'no installation id, so DeviceProfile or the meta table failed');
+
+    final byInstall =
+        await dash.exportLogs(query: 'installation:${launched!.installationId}');
+    expect(byInstall, isNotEmpty,
+        reason: 'no session reached the dashboard at all — sessions.json is '
+            'missing from the upload, or was rejected. Session on the device: '
+            '${launched!.toJson()}');
+  });
+
   test('the session is attributed to the user set after the fact', () async {
     final logs = await dash.exportLogs(query: 'user:$_userID');
     expect(logs.map((l) => l['message']), contains('e2e hello'),
         reason: 'setUser() attributes the whole launch, including the logs '
-            'written before it was called');
+            'written before it was called. Session on the device: '
+            '${launched?.toJson()}');
   });
 
   test('a different user matches nothing', () async {
@@ -185,8 +207,8 @@ void main() {
   });
 
   test('the app version reaches the dashboard', () async {
-    expect(await dash.exportLogs(query: 'app_version:$_appVersion'),
-        isNotEmpty);
+    expect(await dash.exportLogs(query: 'app_version:$_appVersion'), isNotEmpty,
+        reason: 'session on the device: ${launched?.toJson()}');
     expect(await dash.exportLogs(query: 'app_version:0.0.1'), isEmpty);
   });
 
@@ -194,7 +216,8 @@ void main() {
     // Whatever the test host is. The point is that DeviceProfile put something
     // real on the session, not which machine ran the suite.
     final os = Platform.operatingSystem;
-    expect(await dash.exportLogs(query: 'os:$os'), isNotEmpty);
+    expect(await dash.exportLogs(query: 'os:$os'), isNotEmpty,
+        reason: 'session on the device: ${launched?.toJson()}');
   });
 }
 
