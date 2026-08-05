@@ -254,7 +254,7 @@ Sessions outlive their logs by one step: a batch sends the session records its l
 - Device and app context capture (`captureDeviceInfo` / `captureAppContext` are honoured)
 - In-app overlay: Logs, Network and Session tabs, reading a capped in-memory buffer so it works with no server configured
 - Opt-in redaction (`RedactionBehavior`) and body size caps (32 KB)
-- Server backoff: 429/503 read `Retry-After` and pause without counting toward the auto-stop; 413 halves the batch. `lib/src/log/sync_backoff.dart`
+- Server backoff: 429/503 read `Retry-After` and pause without counting toward the failure counter; 413 halves the batch. `lib/src/log/sync_backoff.dart`. Five consecutive real failures buy a 5 minute pause, not a stop, and the counter resets after it
 - Session sampling: `LoggingBehavior.sessionSampleRate`, lowered further by the project's server-side rate from `/api/validate`, drawn once per launch in `init()`. The gate is in `processLogEntry`, above the SQLite write and below the console and overlay
 - Live sessions: `lib/src/live/live_session_client.dart`, a `dart:io` WebSocket to `{link}api/live/socket`. Pairs with a six character code typed into the overlay's Live tab, then streams every log as it happens. `publish()` sits **above** the sampling gate in `processLogEntry` — somebody watching deliberately should see everything
 

@@ -156,7 +156,7 @@ class LogSyncWorker {
       _growBatch(syncBehaviour.maxBatchSize);
     } catch (e, st) {
       // A throttle and an oversized batch are the server working correctly.
-      // Neither touches the failure counter, so neither can reach the auto-stop
+      // Neither touches the failure counter, so neither can reach the pause
       // below — that keeps its original meaning: this server is broken, or
       // these credentials are wrong.
       if (e is SyncBackoff) {
