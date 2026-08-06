@@ -197,11 +197,14 @@ class LiveSessionClient extends ChangeNotifier {
   /// gets no reply waits out its full timeout and then cannot tell a broken
   /// query from a phone that went to sleep.
   Future<void> _answer(String req, Map<String, dynamic> message) async {
-    final op = message['op'] as String? ?? '';
-    final args = (message['args'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
-
+    // Parsing happens inside the try. `args` of the wrong shape entirely — a
+    // string where a map should be — would otherwise throw before the guard,
+    // become an unhandled async error, and send no reply at all: the worst of
+    // both worlds.
     Map<String, dynamic> body;
     try {
+      final op = message['op'] as String? ?? '';
+      final args = (message['args'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
       body = await DatabaseDispatcher.handle(op, args);
     } catch (e) {
       body = {'ok': false, 'error': e.toString()};

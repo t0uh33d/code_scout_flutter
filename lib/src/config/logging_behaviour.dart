@@ -55,6 +55,13 @@ class LoggingBehavior {
   }
 
   bool shouldLog(LogEntry entry) {
+    // System logs are the SDK's own record — a dashboard edit to a local
+    // database, not something the app called. minimumLevel exists to control
+    // the app's volume, and system's value (500) sits below even verbose, so
+    // without this exemption the default config silently drops every one and
+    // an audit line is never written anywhere.
+    if (entry.level == LogLevel.system) return true;
+
     if (entry.level.value < minimumLevel.value) return false;
     if (enabledTags.contains('*')) return true;
 

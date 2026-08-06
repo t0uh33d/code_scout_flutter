@@ -120,8 +120,13 @@ class CodeScoutSqflite implements CodeScoutSource {
       // CAST so one rule covers every type: a number filtered by "42" behaves
       // the way the person typing it expects, with no per-type branching and
       // no expression language to parse.
-      where.add('CAST(${quoteIdentifier(column)} AS TEXT) LIKE ?');
-      args.add('%$text%');
+      //
+      // The typed text is escaped so % and _ mean the characters, not LIKE's
+      // wildcards. Somebody filtering a discounts column by "100%" wants rows
+      // containing that string, not every row.
+      final escaped = text.replaceAll(r'\', r'\\').replaceAll('%', r'\%').replaceAll('_', r'\_');
+      where.add("CAST(${quoteIdentifier(column)} AS TEXT) LIKE ? ESCAPE '\\'");
+      args.add('%$escaped%');
     });
 
     final limit = request.limit.clamp(1, maxPageRows);

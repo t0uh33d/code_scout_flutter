@@ -198,6 +198,19 @@ void main() {
       expect(page.rows.first.first.display, 'checkout_one_tap');
     });
 
+    test("LIKE's wildcards mean themselves in a filter", () async {
+      // Somebody filtering by "100%" wants rows containing that string, not
+      // every row with a 1 followed by two zeroes and anything at all.
+      await db.insert('flags', {'key': 'discount_100%', 'enabled': 0});
+      await db.insert('flags', {'key': 'discount_100x', 'enabled': 0});
+
+      final page = await source.read(
+        const CodeScoutReadRequest(namespace: 'flags', filters: {'key': '100%'}),
+      );
+      expect(page.rows, hasLength(1));
+      expect(page.rows.single.first.display, 'discount_100%');
+    });
+
     test('an empty filter is not a filter', () async {
       final page = await source.read(
         const CodeScoutReadRequest(namespace: 'flags', filters: {'key': ''}),
@@ -219,7 +232,7 @@ void main() {
       expect(second.hasMore, isFalse);
     });
 
-    test('the row ceiling is the deviceies, not the dashboard\'s', () async {
+    test("the row ceiling is the device's, not the dashboard's", () async {
       // A limit the caller can raise is not a limit. Only the device knows what
       // it costs to build the page.
       for (var i = 0; i < 150; i++) {

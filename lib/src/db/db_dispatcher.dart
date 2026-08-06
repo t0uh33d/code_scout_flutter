@@ -1,5 +1,7 @@
+import 'package:code_scout/src/code_scout.dart';
 import 'package:code_scout/src/db/db_registry.dart';
 import 'package:code_scout/src/db/db_source.dart';
+import 'package:code_scout/src/log/log_level.dart';
 
 /// Answers the database questions the dashboard asks over a live session.
 ///
@@ -66,16 +68,39 @@ class DatabaseDispatcher {
           dbName,
           CodeScoutReadRequest.fromJson(args),
         );
-        return {'ok': true, 'page': page.toJson()};
+        // writable rides along so the dashboard's edit affordances come from
+        // this registration rather than from anything the browser said about
+        // itself. The enforcement is in the registry either way; this is about
+        // not drawing buttons that would only ever be refused.
+        return {'ok': true, 'page': page.toJson(), 'writable': entry.writable};
 
       case 'update':
         // Straight to the registry, never to the source: the registry is where
         // writable is enforced, and routing round it would make that flag a
         // suggestion.
-        final result = await DatabaseRegistry.i.write(
-          dbName,
-          CodeScoutWriteRequest.fromJson(args),
-        );
+        final request = CodeScoutWriteRequest.fromJson(args);
+        final result = await DatabaseRegistry.i.write(dbName, request);
+
+        if (result.ok) {
+          // A read leaves no trace and should not. A write changed this
+          // device, so it goes through the ordinary logging pipeline: it lands
+          // in the session timeline, syncs with everything else, and answers
+          // "why is this device's data odd" three weeks later. No audit table.
+          final by = args['by'] as String? ?? 'the dashboard';
+          CodeScout.instance.log(
+            level: LogLevel.system,
+            message:
+                'Dashboard edited $dbName ${request.namespace}.${request.column} on ${request.handle} · by $by',
+            tags: {'codescout'},
+            metadata: {
+              'db': dbName,
+              'namespace': request.namespace,
+              'column': request.column,
+              'handle': '${request.handle}',
+              'by': by,
+            },
+          );
+        }
         return {...result.toJson()};
 
       default:

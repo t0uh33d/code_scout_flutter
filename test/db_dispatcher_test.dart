@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:code_scout/code_scout.dart';
+import 'package:code_scout/src/csx_interface/log_buffer.dart';
 import 'package:code_scout/src/db/db_dispatcher.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -82,6 +83,14 @@ void main() {
   group('rows', () {
     setUp(() => DatabaseRegistry.i.register('shop.db', CodeScoutSqflite(db)));
 
+    test('rows carries writable from the registration, not from the caller', () async {
+      // The dashboard draws edit affordances off this. It must come from what
+      // the app agreed to, never from anything the browser said about itself.
+      final reply = await DatabaseDispatcher.handle(
+          'rows', {'db': 'shop.db', 'namespace': 'flags'});
+      expect(reply['writable'], isFalse);
+    });
+
     test('a page comes back with columns, rows and handles', () async {
       final reply = await DatabaseDispatcher.handle(
           'rows', {'db': 'shop.db', 'namespace': 'flags'});
@@ -146,6 +155,47 @@ void main() {
       expect(reply['ok'], isFalse);
       expect(reply['message'], contains('browsing only'));
       expect((await db.rawQuery('SELECT enabled FROM flags')).first['enabled'], 0);
+    });
+
+    test('a successful write is logged on the device', () async {
+      // A read leaves no trace and should not. A write changed the device, so
+      // it goes through the ordinary pipeline and lands in the session
+      // timeline — the answer to "why is this device's data odd" weeks later.
+      DatabaseRegistry.i.register('shop.db', CodeScoutSqflite(db), writable: true);
+      LogBuffer.i.clear();
+
+      await DatabaseDispatcher.handle('update', {
+        'db': 'shop.db',
+        'namespace': 'flags',
+        'column': 'enabled',
+        'handle': await rowid(),
+        'value': '1',
+        'was': 0,
+        'by': 'ada@example.com',
+      });
+
+      final audit = LogBuffer.i.entries.where((e) => e.level == LogLevel.system);
+      expect(audit, hasLength(1), reason: 'the write left no trace');
+      expect(audit.single.message, contains('flags.enabled'));
+      expect(audit.single.message, contains('ada@example.com'));
+    });
+
+    test('a refused write is not logged as a change', () async {
+      // Nothing changed, so nothing happened worth recording. An audit line
+      // for a refusal would read as "the dashboard edited this" when it did not.
+      DatabaseRegistry.i.register('shop.db', CodeScoutSqflite(db));
+      LogBuffer.i.clear();
+
+      await DatabaseDispatcher.handle('update', {
+        'db': 'shop.db',
+        'namespace': 'flags',
+        'column': 'enabled',
+        'handle': await rowid(),
+        'value': '1',
+        'was': 0,
+      });
+
+      expect(LogBuffer.i.entries.where((e) => e.level == LogLevel.system), isEmpty);
     });
 
     test('a conflict carries the current value back', () async {
