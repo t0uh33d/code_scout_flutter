@@ -248,6 +248,7 @@ class LiveSessionClient extends ChangeNotifier {
   /// a JSON string because it is on its way into a database, neither of which
   /// means anything to a browser rendering one row.
   Map<String, dynamic> _wireLog(LogEntry entry) {
+    final metadata = entry.metadata;
     return {
       'level': entry.level.name,
       'message': entry.message,
@@ -256,6 +257,18 @@ class LiveSessionClient extends ChangeNotifier {
       if (entry.isNetworkCall) 'is_network_call': true,
       if (entry.requestId != null) 'request_id': entry.requestId,
       if (entry.callPhase != null) 'call_phase': entry.callPhase!.name,
+      // The same promotion ingest does server-side, done here because a live
+      // frame never passes through ingest. Without these the dashboard's
+      // network rows have a phase and no verb, path or status to show.
+      if (entry.isNetworkCall && metadata?['method'] != null) 'method': '${metadata!['method']}',
+      if (entry.isNetworkCall && metadata?['url'] != null) 'url': '${metadata!['url']}',
+      if (entry.isNetworkCall && metadata?['status_code'] is int)
+        'status_code': metadata!['status_code'],
+      // The whole metadata rides along on network calls only, for the live
+      // inspector's headers and bodies. It was redacted at capture, so what is
+      // in it is what the app agreed to send — and log rows do not carry it
+      // because nothing on the logs pane reads it.
+      if (entry.isNetworkCall && metadata != null) 'metadata': metadata,
     };
   }
 

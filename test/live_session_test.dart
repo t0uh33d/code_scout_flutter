@@ -215,6 +215,64 @@ void main() {
       expect(DateTime.tryParse(logs.first['timestamp'] as String), isNotNull);
     });
 
+    test('a network call carries what the live inspector renders', () async {
+      // Live frames never pass through ingest, so the promotion ingest does —
+      // method, url, status_code out of the metadata — has to happen at the
+      // socket. Without it every network row on the live screen has a phase
+      // and nothing else to show.
+      expect(await start('4K7Q2P'), isTrue);
+
+      LiveSessionClient.i.publish(LogEntry(
+        level: LogLevel.debug,
+        message: 'Network Response',
+        sessionID: 'launch-1',
+        isNetworkCall: true,
+        requestId: 'req-1',
+        callPhase: NetworkCallPhase.response,
+        metadata: {
+          'method': 'POST',
+          'url': 'https://api.shop.dev/v2/pay',
+          'status_code': 402,
+          'body': {'error': 'card_declined'},
+        },
+      ));
+
+      await _until(() => frames.any((f) => (f['logs'] as List?)?.isNotEmpty ?? false));
+      final log = frames
+          .expand((f) => (f['logs'] as List? ?? const []).cast<Map<String, dynamic>>())
+          .single;
+
+      expect(log['is_network_call'], isTrue);
+      expect(log['request_id'], 'req-1');
+      expect(log['call_phase'], 'response');
+      expect(log['method'], 'POST');
+      expect(log['url'], 'https://api.shop.dev/v2/pay');
+      expect(log['status_code'], 402);
+      // The whole metadata rides along for the inspector's bodies and headers.
+      expect((log['metadata'] as Map)['body'], {'error': 'card_declined'});
+    });
+
+    test('an ordinary log does not drag its metadata onto the wire', () async {
+      expect(await start('4K7Q2P'), isTrue);
+
+      LiveSessionClient.i.publish(LogEntry(
+        level: LogLevel.info,
+        message: 'cart viewed',
+        sessionID: 'launch-1',
+        metadata: {'items': 3},
+      ));
+
+      await _until(() => frames.any((f) => (f['logs'] as List?)?.isNotEmpty ?? false));
+      final log = frames
+          .expand((f) => (f['logs'] as List? ?? const []).cast<Map<String, dynamic>>())
+          .single;
+
+      // Nothing on the logs pane reads it, and a chatty app's metadata would
+      // be pure frame weight on every single row.
+      expect(log.containsKey('metadata'), isFalse);
+      expect(log.containsKey('method'), isFalse);
+    });
+
     test('nothing is sent once the session is stopped', () async {
       expect(await start('4K7Q2P'), isTrue);
       await LiveSessionClient.i.stop();
