@@ -7,7 +7,7 @@ This file provides guidance to AI coding agents when working with the `code_scou
 `code_scout` is a Flutter SDK that captures application logs and network requests, stores them locally in SQLite, and periodically syncs them to a remote Code Scout server via compressed tar.gz uploads.
 
 **Package name:** `code_scout`
-**Version:** 1.3.0
+**Version:** 1.3.1 (committed; **not yet published** — pub.dev has 1.3.0)
 **Dart SDK:** ^3.11.0 | **Flutter:** >=3.0.0
 **Published:** [pub.dev/packages/code_scout](https://pub.dev/packages/code_scout)
 
@@ -19,8 +19,12 @@ Network interception is provided via separate companion packages to keep the cor
 |---------|---------|---------|
 | `code_scout_dio` | Dio interceptor — `CodeScoutDioInterceptor` | [pub.dev/packages/code_scout_dio](https://pub.dev/packages/code_scout_dio) |
 | `code_scout_http` | HTTP client wrapper — `CodeScoutHttpClient` | [pub.dev/packages/code_scout_http](https://pub.dev/packages/code_scout_http) |
+| `code_scout_talker` | Talker observer — `CodeScoutTalkerObserver` | **not yet published** |
 
-These live in `packages/code_scout_dio/` and `packages/code_scout_http/` within this repo. Their pubspecs depend on `code_scout: ^1.0.0` (hosted). The example app uses `dependency_overrides` to resolve the path dep for local development.
+These live under `packages/` in this repo. A companion package exists when an integration needs a
+third-party dependency the core should not carry — `dio`, `http`, `talker`. That rule is why the
+database browser is *not* one: it needs nothing the core does not already have, since sqflite backs
+the log store and the key-value adapter takes closures rather than naming `shared_preferences`. Their pubspecs depend on `code_scout: ^1.0.0` (hosted). The example app uses `dependency_overrides` to resolve the path dep for local development.
 
 ## Commands
 
@@ -92,6 +96,13 @@ lib/
     │   └── overlay_theme.dart           # The dashboard's palette, for the overlay
     ├── live/
     │   └── live_session_client.dart     # dart:io WebSocket to the dashboard, pairing + streaming
+    ├── db/                              # Browsing local storage from the dashboard
+    │   ├── db_source.dart               # CodeScoutSource + request/result types
+    │   ├── sqflite_source.dart          # SQLite: schema, rows, the fixed UPDATE template
+    │   ├── key_value_source.dart        # prefs, Hive, anything with a key and a value
+    │   ├── db_value.dart                # affinity, coercion, cell encoding, the wire budget
+    │   ├── db_registry.dart             # registration, and where `writable` is enforced
+    │   └── db_dispatcher.dart           # the five ops the socket answers
     ├── session/
     │   ├── session_record.dart      # SessionRecord — one launch, wire + row shapes
     │   └── device_profile.dart      # Device model, OS, app version via the plus plugins
@@ -105,8 +116,10 @@ lib/
 packages/
 ├── code_scout_dio/
 │   └── lib/code_scout_dio.dart          # CodeScoutDioInterceptor (single file)
-└── code_scout_http/
-    └── lib/code_scout_http.dart         # CodeScoutHttpClient (single file)
+├── code_scout_http/
+│   └── lib/code_scout_http.dart         # CodeScoutHttpClient (single file)
+└── code_scout_talker/
+    └── lib/code_scout_talker.dart       # CodeScoutTalkerObserver (single file)
 ```
 
 ## Key Patterns
