@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:code_scout/src/session/device_profile.dart';
+import 'package:code_scout/src/version.dart';
 
 /// One app launch, as the SDK knows it.
 ///
@@ -73,7 +74,25 @@ class SessionRecord {
   }
 
   /// The wire shape, which is what goes into sessions.json.
+  ///
+  /// [sdk_version] is stamped from the constant rather than stored on the
+  /// record, so it needs no column and no on-device migration. It also means an
+  /// app that upgraded the SDK mid-session reports the version it is running
+  /// now, which is the more useful answer than the one it launched with.
   Map<String, dynamic> toJson() => {
+        ...toRow(),
+        'metadata': metadata,
+        'sdk_version': codeScoutSdkVersion,
+      };
+
+  /// The SQLite row.
+  ///
+  /// This is the base shape and [toJson] builds on it, not the other way round.
+  /// It used to be the reverse, which made the wire shape unextendable: any key
+  /// added to [toJson] landed in the INSERT as well, hit a column that does not
+  /// exist, and failed every session write on the device. Metadata is a JSON
+  /// string here and a real object on the wire, which is the other difference.
+  Map<String, dynamic> toRow() => {
         'id': id,
         'installation_id': installationId,
         'user_id': userId,
@@ -82,16 +101,9 @@ class SessionRecord {
         'os_version': osVersion,
         'app_version': appVersion,
         'build_number': buildNumber,
-        'metadata': metadata,
+        'metadata': metadata == null ? null : jsonEncode(metadata),
         'started_at': startedAt.toUtc().toIso8601String(),
         'last_seen_at': lastSeenAt.toUtc().toIso8601String(),
-      };
-
-  /// The SQLite row. Metadata is a JSON string here and a real object on the
-  /// wire, which is the only difference between the two shapes.
-  Map<String, dynamic> toRow() => {
-        ...toJson(),
-        'metadata': metadata == null ? null : jsonEncode(metadata),
       };
 
   factory SessionRecord.fromRow(Map<String, dynamic> row) {

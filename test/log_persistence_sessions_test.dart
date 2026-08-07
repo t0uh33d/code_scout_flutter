@@ -64,6 +64,24 @@ void main() {
     expect(await LogPersistenceService.i.installationId(), first);
   });
 
+  // toJson carries sdk_version and toRow must not, because the sessions table
+  // has no such column and SQLite rejects the whole INSERT rather than ignoring
+  // the extra key. Asserting on the map alone would not catch it: the shapes
+  // only disagree once real SQLite sees them.
+  test('the row shape is what the table actually accepts', () async {
+    final r = session('s-wire', user: 'u_8812');
+    expect(r.toJson()['sdk_version'], codeScoutSdkVersion);
+
+    final db = await LogPersistenceService.i.database;
+    // Straight through insert rather than saveSession, so a failure points at
+    // the shape rather than at anything the service does around it.
+    await db.insert('sessions', r.toRow());
+
+    final rows = await db.query('sessions', where: 'id = ?', whereArgs: ['s-wire']);
+    expect(rows, hasLength(1));
+    expect(rows.first.containsKey('sdk_version'), isFalse);
+  });
+
   test('a session round trips through the table', () async {
     await LogPersistenceService.i.saveSession(session('s-1', user: 'u_8812'));
 

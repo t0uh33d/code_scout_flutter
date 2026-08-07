@@ -130,6 +130,8 @@ packages/
 - **Configuration:** All behavior controlled via `CodeScoutConfiguration` passed to `CodeScout.instance.init()`. Includes `LoggingBehavior` (filtering), `LogSyncBehavior` (timing), `ProjectCredentials` (server auth), `RealTimeConfig`.
 - **Zero HTTP dependency:** All server communication uses `dart:io` `HttpClient` directly — no `http` or `dio` in the core package.
 - **Sync atomicity:** Logs are marked `sync_status=1` before upload, rolled back on failure, deleted on success. Concurrent syncs are prevented via a `_syncing` guard.
+- **The package version is a constant** in `lib/src/version.dart`, because Dart cannot read its own pubspec at runtime. Bump it in the same commit as `pubspec.yaml`; a test compares the two and fails when they drift. It goes on the wire as `sdk_version` on every session, so the dashboard can show which build an app is running.
+- **`SessionRecord.toRow()` is the base shape and `toJson()` builds on it, never the reverse.** It used to be the other way round, which made the wire shape unextendable: any key added for the server also landed in the SQLite INSERT, hit a column that does not exist, and failed *every* session write on the device. `sdk_version` is wire-only and is what would have triggered it.
 
 ## Public API Surface
 

@@ -40,12 +40,41 @@ void main() {
       'metadata',
       'started_at',
       'last_seen_at',
+      'sdk_version',
     });
     expect(json['device_model'], 'Pixel 7');
     expect(json['user_id'], 'u_8812');
+    expect(json['sdk_version'], codeScoutSdkVersion);
     // The server parses ISO-8601 in UTC. A local timestamp would put every
     // session hours away from when it happened.
     expect(json['started_at'], '2026-07-30T14:16:02.000Z');
+  });
+
+  // The two shapes are not the same and must not be built from each other in
+  // the direction that lets the wire leak into the database. toRow used to be
+  // `{...toJson(), ...}`, so any key added for the server also went into the
+  // INSERT, hit a column that does not exist, and failed every session write.
+  test('the row shape has no wire-only fields', () {
+    final row = record(userId: 'u_8812').toRow();
+
+    expect(
+      row.containsKey('sdk_version'),
+      isFalse,
+      reason: 'sdk_version has no column; including it fails the INSERT',
+    );
+    expect(row.keys.toSet(), {
+      'id',
+      'installation_id',
+      'user_id',
+      'device_model',
+      'os_name',
+      'os_version',
+      'app_version',
+      'build_number',
+      'metadata',
+      'started_at',
+      'last_seen_at',
+    });
   });
 
   test('metadata is an object on the wire and a string in the row', () {

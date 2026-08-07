@@ -221,6 +221,25 @@ void main() {
     expect(await dash.exportLogs(query: 'app_version:0.0.1'), isEmpty);
   });
 
+  // The one assertion in the suite that proves both repositories agree about
+  // sdk_version. The Go tests build sessions.json by hand, so they prove the
+  // server reads that shape and not that the SDK still sends it; the Flutter
+  // tests write it to SQLite with no server on the other end. Only this crosses
+  // the gap, and it is the gap a half-committed fix once slipped through.
+  test('the SDK version reaches the dashboard', () async {
+    expect(await dash.exportLogs(query: 'sdk_version:$codeScoutSdkVersion'),
+        isNotEmpty,
+        reason: 'the dashboard has no session on SDK $codeScoutSdkVersion, so '
+            'sdk_version was dropped somewhere between toJson and the column. '
+            'Session on the device: ${launched?.toJson()}');
+
+    // Without this, a filter the server silently ignores would pass the line
+    // above by matching every session.
+    expect(await dash.exportLogs(query: 'sdk_version:0.0.1'), isEmpty,
+        reason: 'sdk_version: matched a version nothing is running, so the '
+            'term is being ignored rather than applied');
+  });
+
   test('the platform the SDK ran on reaches the dashboard', () async {
     // Whatever the test host is. The point is that DeviceProfile put something
     // real on the session, not which machine ran the suite.

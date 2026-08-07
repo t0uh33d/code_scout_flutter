@@ -1,3 +1,9 @@
+## 1.4.0
+
+### Added
+
+- **Sessions now report which version of this package sent them.** The dashboard shows it on the Sessions list and on the session itself, and `sdk_version:` filters on it, so "which apps are still on a build without that fix?" is a question you can answer without asking anyone. It is stamped at upload from a constant rather than stored, so there is no database change on the device, and an app that upgrades mid-session reports the version it is running now.
+
 ## 1.3.1
 
 ### Changed
