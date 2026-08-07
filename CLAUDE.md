@@ -189,6 +189,40 @@ await CodeScout.instance.flush();
 await CodeScout.instance.dispose();
 ```
 
+### Browsing local storage from the dashboard
+
+```dart
+// SQLite, through the connection the app already has.
+CodeScout.instance.registerDatabase('shop.db', CodeScoutSqflite(db),
+    writable: kDebugMode);
+
+// shared_preferences, Hive, get_storage — anything with a key and a value.
+// Closures rather than the package's types, so none of them becomes a
+// dependency of the SDK for a debug-only feature.
+CodeScout.instance.registerDatabase('prefs', CodeScoutKeyValue(
+  keys: () async => prefs.getKeys(),
+  readKey: (k) async => prefs.get(k),
+  writeKey: (k, v) async => v == null ? prefs.remove(k) : prefs.setString(k, '$v'),
+), writable: kDebugMode);
+```
+
+Reachable only while the device is in a live session, because the data is on the phone and nowhere
+else. Nothing on the server is written. The rules that hold the feature together:
+
+- **Nothing is browsable until the app names it.** No scanning for `*.db` — that finds the SDK's own
+  log store and eventually an encrypted file it cannot open. This is the inverse of redaction, which
+  hides nothing unless you name it, and the inversion is deliberate.
+- **The dashboard never sends SQL.** Five structured ops (`sources`, `namespaces`, `schema`, `rows`,
+  `update`); the device builds every statement from its own schema, with identifiers checked for
+  membership rather than escaped. **Adding an op that takes a statement ends the safety argument.**
+- **`writable` is enforced in `DatabaseRegistry`**, not in the source, so an op cannot route round
+  it. Registration is ignored in release builds unless `allowInRelease`.
+- **The dashboard may only edit what it actually saw.** A blob, a truncated string and a redacted
+  value are all read-only for one reason: the update carries the old value to catch a conflict, and
+  a value nobody was shown cannot be compared against anything.
+- **A successful write logs itself** at `system` level, which is exempt from both the level gate and
+  the sampling gate — it is the SDK's own record of something it did to the device, not app volume.
+
 ## SQLite Schema (logs table)
 
 ```sql
@@ -260,6 +294,10 @@ Sessions outlive their logs by one step: a batch sends the session records its l
 
 ### Incomplete / TODO
 - Nothing outstanding for 1.0 in the SDK.
+- `make test-sdk-e2e` has no coverage of the database browser. The dashboard's Playwright tests use
+  a stub device answering canned JSON, and the Flutter tests use a real SQLite file with no server,
+  so nothing yet proves the two repos agree on that wire format. It has already bitten once: a fix
+  shipped with its Go half committed and its SDK half not, and every e2e test stayed green.
 
 ### Publishing
 
