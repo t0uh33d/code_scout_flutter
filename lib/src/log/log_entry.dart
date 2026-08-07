@@ -114,7 +114,14 @@ class LogEntry {
       // still prints to the console and still fills the overlay, because those
       // are free and are what you are looking at while you work — what
       // sampling is there to reduce is rows on the server.
-      if (!CodeScout.instance.isSessionSampledIn) return;
+      //
+      // System logs are exempt, for the same reason they are exempt from the
+      // level gate. They are the SDK's own record of something it did to this
+      // device — a dashboard edit to a local database — not app volume, and
+      // there is no volume to control: they happen when a person presses Save.
+      // Sampling one out means the row changed and nothing anywhere says who
+      // changed it, which is the one question the record exists to answer.
+      if (level != LogLevel.system && !CodeScout.instance.isSessionSampledIn) return;
 
       await LogPersistenceService.i.saveLogEntry(this);
     } catch (e, st) {

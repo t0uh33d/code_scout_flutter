@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:code_scout/code_scout.dart';
 import 'package:code_scout/src/csx_interface/log_buffer.dart';
+import 'package:code_scout/src/log/log_persistence_service.dart';
 import 'package:code_scout/src/db/db_dispatcher.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -178,6 +179,43 @@ void main() {
       expect(audit, hasLength(1), reason: 'the write left no trace');
       expect(audit.single.message, contains('flags.enabled'));
       expect(audit.single.message, contains('ada@example.com'));
+    });
+
+    test('the audit line survives a sampled-out launch', () async {
+      // Two gates sit below the audit call, and the level exemption only
+      // cleared the first. With a sample rate this launch loses, the edit still
+      // changed the device and still returned ok, but the record of who did it
+      // was never written to SQLite and never uploaded — so nothing existed
+      // three weeks later, which is the one thing it is for.
+      await CodeScout.instance.init(
+        configuration: CodeScoutConfiguration(
+          logging: LoggingBehavior(sessionSampleRate: 0.0),
+        ),
+      );
+      addTearDown(CodeScout.instance.dispose);
+      expect(CodeScout.instance.isSessionSampledIn, isFalse,
+          reason: 'the launch was not sampled out, so this proves nothing');
+
+      DatabaseRegistry.i.register('shop.db', CodeScoutSqflite(db), writable: true);
+
+      // The delta, not the total. The log store is a file that outlives a test
+      // run, so `pendingCount() > 0` is true from rows written weeks ago and
+      // would pass with the exemption removed — it did, which is how this
+      // assertion got rewritten.
+      final before = await LogPersistenceService.i.pendingCount();
+
+      await DatabaseDispatcher.handle('update', {
+        'db': 'shop.db',
+        'namespace': 'flags',
+        'column': 'enabled',
+        'handle': await rowid(),
+        'value': '1',
+        'was': 0,
+        'by': 'ada@example.com',
+      });
+
+      final after = await LogPersistenceService.i.pendingCount();
+      expect(after, before + 1, reason: 'the audit line was never written to disk');
     });
 
     test('a refused write is not logged as a change', () async {

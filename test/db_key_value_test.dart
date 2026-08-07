@@ -131,6 +131,58 @@ void main() {
       expect(page.rows, hasLength(1));
     });
 
+    test('sorting by value actually reorders, rather than reporting that it did', () async {
+      // The dashboard paints a sort arrow on every column header it is given,
+      // including value. Ignoring the request while the arrow claims otherwise
+      // is worse than refusing it.
+      final page = await store.source().read(
+            const CodeScoutReadRequest(namespace: 'prefs', sortColumn: 'value'),
+          );
+      final values = page.rows.map((r) => r.last.display as String).toList();
+      final sorted = [...values]..sort();
+      expect(values, sorted, reason: 'the rows came back in key order');
+    });
+
+    test('descending by value reverses that, not the key order', () async {
+      final page = await store.source().read(
+            const CodeScoutReadRequest(
+                namespace: 'prefs', sortColumn: 'value', descending: true),
+          );
+      final values = page.rows.map((r) => r.last.display as String).toList();
+      final sorted = ([...values]..sort()).reversed.toList();
+      expect(values, sorted);
+    });
+
+    test('sorting by key still works in both directions', () async {
+      final up = await store.source().read(
+            const CodeScoutReadRequest(namespace: 'prefs', sortColumn: 'key'),
+          );
+      final down = await store.source().read(
+            const CodeScoutReadRequest(namespace: 'prefs', sortColumn: 'key', descending: true),
+          );
+      final keys = up.rows.map((r) => r.first.display).toList();
+      expect(keys, [...keys]..sort());
+      expect(down.rows.map((r) => r.first.display).toList(), keys.reversed.toList());
+    });
+
+    test('a column this store does not have is refused, not swallowed', () async {
+      // The SQL side raises for a column absent from the schema; a key-value
+      // store has exactly two, and silently ignoring the rest told the
+      // dashboard its sort had been applied when nothing happened.
+      expect(
+        () => store.source().read(
+              const CodeScoutReadRequest(namespace: 'prefs', sortColumn: 'nope'),
+            ),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(
+        () => store.source().read(
+              const CodeScoutReadRequest(namespace: 'prefs', filters: {'nope': 'x'}),
+            ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
     test('paging reports whether there is more', () async {
       final first = await store.source().read(
             const CodeScoutReadRequest(namespace: 'prefs', limit: 2),

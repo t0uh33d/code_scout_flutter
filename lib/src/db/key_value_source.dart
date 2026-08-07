@@ -106,6 +106,21 @@ class CodeScoutKeyValue implements CodeScoutSource {
   Future<CodeScoutPage> read(CodeScoutReadRequest request) async {
     final target = _resolve(request.namespace);
 
+    // Every column is checked for membership before it is used, the same as
+    // the SQL side does against PRAGMA table_info. A key-value store has
+    // exactly two, and silently ignoring an unknown one told the dashboard its
+    // sort had been applied when nothing had happened.
+    const known = {'key', 'value'};
+    final sort = request.sortColumn;
+    if (sort != null && !known.contains(sort)) {
+      throw ArgumentError.value(sort, 'sortColumn', 'no such column in ${request.namespace}');
+    }
+    for (final column in request.filters.keys) {
+      if (!known.contains(column)) {
+        throw ArgumentError.value(column, 'filter', 'no such column in ${request.namespace}');
+      }
+    }
+
     var names = (await target.keys()).toList()..sort();
 
     // Filtering and sorting happen here rather than in a query, because there
@@ -116,41 +131,57 @@ class CodeScoutKeyValue implements CodeScoutSource {
       final needle = keyFilter.toLowerCase();
       names = names.where((k) => k.toLowerCase().contains(needle)).toList();
     }
-    if (request.sortColumn == 'key' && request.descending) {
-      names = names.reversed.toList();
-    }
 
     final valueFilter = request.filters['value'];
     final limit = request.limit.clamp(1, 500);
     final offset = request.offset < 0 ? 0 : request.offset;
 
+    // Every value is read before any page is cut, because both sorting by value
+    // and filtering by it need the whole set to be correct. That is one read
+    // per key over a store the SDK caps at 500 rows a page — a preferences file
+    // or a Hive box, not a table. Sorting the page rather than the set would
+    // order whichever rows happened to be first, which is the kind of wrong
+    // that looks right.
+    final pairs = <({String key, String value})>[];
+    for (final key in names) {
+      final rendered = _stringify(await target.readKey(key));
+      if (valueFilter != null && valueFilter.isNotEmpty) {
+        if (!rendered.toLowerCase().contains(valueFilter.toLowerCase())) continue;
+      }
+      pairs.add((key: key, value: rendered));
+    }
+
+    if (sort == 'value') {
+      pairs.sort((a, b) => a.value.compareTo(b.value));
+    }
+    // Keys are already ascending from the sort above; anything else is either
+    // sort == 'key' or no sort at all, which are the same order.
+    if (request.descending) {
+      final reversed = pairs.reversed.toList();
+      pairs
+        ..clear()
+        ..addAll(reversed);
+    }
+
     final rows = <List<CellValue>>[];
     final handles = <Object?>[];
     var bytes = 0;
     var stoppedForSize = false;
-    var seen = 0;
     var more = false;
 
-    for (final key in names) {
-      final raw = await target.readKey(key);
-      final rendered = _stringify(raw);
-
-      if (valueFilter != null && valueFilter.isNotEmpty) {
-        if (!rendered.toLowerCase().contains(valueFilter.toLowerCase())) continue;
-      }
-
-      seen++;
-      if (seen <= offset) continue;
+    for (var i = offset; i < pairs.length; i++) {
       if (rows.length >= limit) {
         more = true;
         break;
       }
+      final pair = pairs[i];
 
       final cells = [
         // The key is the handle, so it is never editable: changing it would be
         // a delete and an insert wearing one button.
-        CellValue(key, editable: false, because: 'A key is the row itself, not a value in it.'),
-        encodeCell(rendered, redacted: Redactor.hides(key)),
+        CellValue(pair.key,
+            editable: false, because: 'A key is the row itself, not a value in it.'),
+        encodeCell(pair.value, redacted: Redactor.hides(pair.key)),
       ];
 
       final size = approximateBytes(cells);
@@ -160,7 +191,7 @@ class CodeScoutKeyValue implements CodeScoutSource {
       }
       bytes += size;
       rows.add(cells);
-      handles.add(key);
+      handles.add(pair.key);
     }
 
     return CodeScoutPage(

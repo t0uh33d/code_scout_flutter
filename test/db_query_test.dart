@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:code_scout/code_scout.dart';
@@ -97,8 +98,75 @@ void main() {
       expect(coerceForColumn(null, 'INTEGER'), isNull);
     });
 
-    test('a blob column cannot be edited as text', () {
-      expect(() => coerceForColumn('anything', 'BLOB'), throwsA(isA<CoercionError>()));
+    test('a column with no declared type takes what it is given', () {
+      // SQLite rule 3 sends an untyped column to BLOB affinity, and BLOB
+      // affinity means "store whatever you are given" rather than "this holds
+      // bytes". `CREATE TABLE t (a, b)` is legal and common; refusing the
+      // affinity made every such column permanently uneditable, with a message
+      // about binary data that had nothing to do with it.
+      expect(coerceForColumn('hello', ''), 'hello');
+      expect(coerceForColumn('42', ''), '42');
+      expect(coerceForColumn('anything', 'BLOB'), 'anything');
+    });
+
+    test('a cell actually holding bytes is never offered for editing', () {
+      // Which is why the affinity does not need to refuse: encodeCell marks a
+      // real blob read-only, so no editor opens for one in the first place.
+      expect(encodeCell(Uint8List(16)).editable, isFalse);
+    });
+  });
+
+  group('the wire estimate', () {
+    // The budget only works if it counts what the socket counts. Dart strings
+    // are UTF-16 code units, so String.length undercounts every non-ASCII
+    // character — and an oversized frame does not fail the query, it trips the
+    // server's read limit and ends the live session for everyone watching.
+    int costOf(String s) => approximateBytes([CellValue(s)]);
+
+    test('non-ASCII text is charged its real UTF-8 size', () {
+      // Three bytes per character, one UTF-16 unit each.
+      final cjk = '実験' * 100;
+      expect(cjk.length, 200);
+      expect(costOf(cjk), greaterThanOrEqualTo(600), reason: 'charged UTF-16 units, not bytes');
+    });
+
+    test('an emoji is charged four bytes, not two', () {
+      final emoji = '🙂' * 50;
+      expect(emoji.length, 100, reason: 'each is a surrogate pair');
+      expect(costOf(emoji), greaterThanOrEqualTo(200));
+    });
+
+    test('JSON escaping is charged', () {
+      // A column holding stringified JSON is the common case: every quote
+      // becomes two bytes on the wire.
+      final quoted = '"' * 100;
+      expect(costOf(quoted), greaterThanOrEqualTo(200));
+    });
+
+    test('the estimate is never under what jsonEncode actually produces', () {
+      for (final s in ['plain ascii', '実験データ', '🙂🙂🙂', '{"a":"b"}', 'tab\there']) {
+        final actual = utf8.encode(jsonEncode(s)).length;
+        expect(costOf(s), greaterThanOrEqualTo(actual),
+            reason: 'underestimated $s: budget ${costOf(s)}, real $actual');
+      }
+    });
+
+    test('a page of CJK stops well inside the frame the socket accepts', () async {
+      // The concrete failure: five wide text columns of CJK passed the budget
+      // at roughly a third of their true size, and the frame that reached the
+      // server was over its one megabyte read limit.
+      await db.execute('CREATE TABLE wide (k TEXT, a TEXT, b TEXT, c TEXT, d TEXT)');
+      final big = '実' * (maxCellChars - 1);
+      for (var i = 0; i < 60; i++) {
+        await db.insert('wide', {'k': 'r$i', 'a': big, 'b': big, 'c': big, 'd': big});
+      }
+
+      final page = await source.read(const CodeScoutReadRequest(namespace: 'wide', limit: 100));
+      final encoded = utf8.encode(jsonEncode(page.toJson())).length;
+
+      expect(page.stoppedForSize, isTrue);
+      expect(encoded, lessThan(1024 * 1024),
+          reason: 'the frame is over the socket read limit, which drops the session');
     });
   });
 

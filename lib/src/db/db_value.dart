@@ -128,7 +128,7 @@ Object? coerceForColumn(String? typed, String declaredType) {
       final n = int.tryParse(typed.trim());
       if (n == null) {
         throw CoercionError('"$typed" is not a whole number, '
-            'and this column holds ${declaredType.isEmpty ? 'integers' : declaredType}.');
+            'and this column holds $declaredType.');
       }
       return n;
 
@@ -136,7 +136,7 @@ Object? coerceForColumn(String? typed, String declaredType) {
       final d = double.tryParse(typed.trim());
       if (d == null) {
         throw CoercionError('"$typed" is not a number, '
-            'and this column holds ${declaredType.isEmpty ? 'numbers' : declaredType}.');
+            'and this column holds $declaredType.');
       }
       return d;
 
@@ -144,8 +144,17 @@ Object? coerceForColumn(String? typed, String declaredType) {
       return typed;
 
     case SqliteAffinity.blob:
-      throw const CoercionError(
-          'Binary columns cannot be edited as text.');
+      // BLOB affinity means "store whatever you are given", not "this holds
+      // bytes". A column declared with no type at all lands here by SQLite's
+      // own rule 3, and `CREATE TABLE t (a, b)` is legal and common — so is
+      // anything from CREATE TABLE ... AS SELECT. Refusing the whole affinity
+      // made every untyped column permanently uneditable, with a message about
+      // binary data that had nothing to do with it.
+      //
+      // A cell actually holding bytes never reaches here: encodeCell renders a
+      // blob as its size and marks it read-only, so the dashboard offers no
+      // editor for one.
+      return typed;
 
     case SqliteAffinity.numeric:
       // SQLite's NUMERIC does exactly this: a value that looks like a number is
@@ -154,21 +163,48 @@ Object? coerceForColumn(String? typed, String declaredType) {
   }
 }
 
-/// Roughly how many bytes a row will take on the wire. Used to stop building a
-/// page before it grows into a frame the socket will refuse.
+/// How many bytes a row will take on the wire. Used to stop building a page
+/// before it grows into a frame the socket will refuse.
+///
+/// Measured in encoded UTF-8, not in `String.length`. Dart strings are UTF-16
+/// code units, so `length` undercounts every non-ASCII character: CJK is three
+/// bytes to one unit, and an emoji is four bytes to two. A page of Japanese
+/// text passed a budget it was three times over, and the frame that reached
+/// the server was refused by its read limit — which does not fail the query,
+/// it drops the socket and ends the live session for everyone watching.
+///
+/// JSON escaping is charged too. A string full of quotes or backslashes very
+/// nearly doubles on the wire, and a table holding stringified JSON is the
+/// common case for that.
 int approximateBytes(List<CellValue> cells) {
   var total = 0;
   for (final c in cells) {
     final v = c.display;
     total += switch (v) {
       null => 4,
-      String s => s.length + 2,
+      String s => _wireCost(s),
       _ => 8,
     };
   }
   // Punctuation and keys, near enough for a budget that only has to be in the
   // right order of magnitude.
   return total + 16;
+}
+
+/// What one string costs as a JSON value: its UTF-8 bytes, plus the escaping
+/// JSON will add, plus the two quotes around it.
+int _wireCost(String s) {
+  var bytes = utf8.encode(s).length;
+  for (final unit in s.codeUnits) {
+    // The characters jsonEncode expands. Quote and backslash become two bytes;
+    // a control character becomes the six of \u00XX.
+    if (unit == 0x22 || unit == 0x5C) {
+      bytes += 1;
+    } else if (unit < 0x20) {
+      bytes += 5;
+    }
+  }
+  return bytes + 2;
 }
 
 /// JSON encoding used for the size estimate in tests and for the wire.
