@@ -92,6 +92,17 @@ void main() {
       expect(reply['writable'], isFalse);
     });
 
+    test('a page names its row handle and its kind', () async {
+      // The dashboard shows the statement a write will run. Without these it
+      // guessed "rowid", which is wrong for every key-value store — those
+      // address rows by key and run no SQL at all.
+      final reply = await DatabaseDispatcher.handle(
+          'rows', {'db': 'shop.db', 'namespace': 'flags'});
+      final page = reply['page'] as Map<String, dynamic>;
+      expect(page['row_handle'], 'rowid');
+      expect(page['kind'], 'sql');
+    });
+
     test('a page comes back with columns, rows and handles', () async {
       final reply = await DatabaseDispatcher.handle(
           'rows', {'db': 'shop.db', 'namespace': 'flags'});

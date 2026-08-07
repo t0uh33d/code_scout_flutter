@@ -175,6 +175,8 @@ class CodeScoutSqflite implements CodeScoutSource {
       handles: handles,
       hasMore: stoppedForSize || raw.length > limit,
       stoppedForSize: stoppedForSize,
+      rowHandle: schema.rowHandle,
+      kind: CodeScoutSourceKind.sql,
     );
   }
 

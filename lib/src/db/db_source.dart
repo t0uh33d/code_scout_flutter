@@ -147,6 +147,8 @@ class CodeScoutPage {
     required this.handles,
     required this.hasMore,
     this.stoppedForSize = false,
+    this.rowHandle,
+    this.kind = CodeScoutSourceKind.sql,
   });
 
   final List<CodeScoutColumn> columns;
@@ -162,6 +164,17 @@ class CodeScoutPage {
 
   final bool hasMore;
 
+  /// The column that identifies a row: `rowid` for an ordinary SQLite table,
+  /// `key` for a key-value store, null when nothing does. Carried on the page
+  /// so the dashboard can name it without a second round trip — it shows the
+  /// statement a write will run, and a preview naming the wrong column is
+  /// worse than no preview at all.
+  final String? rowHandle;
+
+  /// Which kind of store this page came from. A key-value write runs no SQL,
+  /// so the dashboard describes it differently.
+  final CodeScoutSourceKind kind;
+
   /// True when the page ended because it was getting too big to send, rather
   /// than because the rows ran out. Said out loud because a page that quietly
   /// stops short reads as "that is all there is".
@@ -173,6 +186,8 @@ class CodeScoutPage {
         'handles': handles,
         'has_more': hasMore,
         'stopped_for_size': stoppedForSize,
+        'row_handle': rowHandle,
+        'kind': kind.name,
       };
 }
 

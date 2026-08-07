@@ -194,12 +194,15 @@ class CodeScoutKeyValue implements CodeScoutSource {
       handles.add(pair.key);
     }
 
+    final schema = await describe(request.namespace);
     return CodeScoutPage(
-      columns: (await describe(request.namespace)).columns,
+      columns: schema.columns,
       rows: rows,
       handles: handles,
       hasMore: more || stoppedForSize,
       stoppedForSize: stoppedForSize,
+      rowHandle: schema.rowHandle,
+      kind: CodeScoutSourceKind.keyValue,
     );
   }
 
