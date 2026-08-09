@@ -1,3 +1,13 @@
+## 1.5.0
+
+### Fixed
+
+- **Network requests that never got an answer are now dropped.** A request is held from the moment it goes out until its response or error arrives, so the three phases can be stitched back into one call. Almost all of them arrive; the ones that do not are real, like an app killed mid-flight or a socket that dies without either callback running. There was a two minute eviction for exactly this and nothing ever started it, so it had never once run and the map only ever grew. It is a sweep on insert now, which needs no timer running in your app and looks at the moment the map can actually grow.
+
+### Deprecated
+
+- `NetworkManager.startCleanupTimer()` and `stopCleanupTimer()` do nothing and will be removed. Eviction is automatic. Nothing in this package ever called them, so nothing was ever running the timer they started.
+
 ## 1.4.0
 
 ### Added
