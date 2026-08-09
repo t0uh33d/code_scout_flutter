@@ -7,7 +7,7 @@ This file provides guidance to AI coding agents when working with the `code_scou
 `code_scout` is a Flutter SDK that captures application logs and network requests, stores them locally in SQLite, and periodically syncs them to a remote Code Scout server via compressed tar.gz uploads.
 
 **Package name:** `code_scout`
-**Version:** 1.3.1 (committed; **not yet published** — pub.dev has 1.3.0)
+**Version:** 1.4.0 (published)
 **Dart SDK:** ^3.11.0 | **Flutter:** >=3.0.0
 **Published:** [pub.dev/packages/code_scout](https://pub.dev/packages/code_scout)
 
@@ -19,7 +19,7 @@ Network interception is provided via separate companion packages to keep the cor
 |---------|---------|---------|
 | `code_scout_dio` | Dio interceptor — `CodeScoutDioInterceptor` | [pub.dev/packages/code_scout_dio](https://pub.dev/packages/code_scout_dio) |
 | `code_scout_http` | HTTP client wrapper — `CodeScoutHttpClient` | [pub.dev/packages/code_scout_http](https://pub.dev/packages/code_scout_http) |
-| `code_scout_talker` | Talker observer — `CodeScoutTalkerObserver` | **not yet published** |
+| `code_scout_talker` | Talker observer — `CodeScoutTalkerObserver` | [pub.dev/packages/code_scout_talker](https://pub.dev/packages/code_scout_talker) |
 
 These live under `packages/` in this repo. A companion package exists when an integration needs a
 third-party dependency the core should not carry — `dio`, `http`, `talker`. That rule is why the
@@ -50,15 +50,30 @@ throwaway database and port:
 cd ../code_scout && make test-sdk-e2e
 ```
 
-It is the only test where the wire contract is not written down on both sides:
-the logs go in through the public API and come back out of the dashboard's
-export endpoint. Two things about the host it runs on are worth knowing, since
-both failed silently the first time. `TestWidgetsFlutterBinding` installs an
-`HttpOverrides` that answers every request with 400 without opening a socket, so
-the test clears it. And `getTemporaryDirectory()` is a platform channel with
-nothing behind it here, so `PathProviderPlatform.instance` is replaced — left
-alone, the compressor throws inside the sync worker's own catch, which reports
-through `dart:developer` where the test runner never shows it.
+It is the only place the wire contract is not written down on both sides. Two
+files:
+
+- `sdk_to_dashboard_test.dart` logs through the public API and reads the rows
+  back out of the dashboard's export endpoint.
+- `db_browser_test.dart` pairs a real live session over a real WebSocket,
+  registers a real SQLite database and a key-value store, then drives the
+  dashboard's own `/live/{sid}/db*` routes. It is what covers the database
+  browser, where the dashboard's Playwright tests only ever talk to a stub
+  device.
+
+`dashboard.dart` is the shared client for both: signing in, making a project,
+minting a pairing code, posting a form. One account for every file, because
+registration only happens on a fresh instance and a second email would have
+nobody to log in as.
+
+Two things about the host are worth knowing, since both failed silently the
+first time. `TestWidgetsFlutterBinding` installs an `HttpOverrides` that answers
+every request with 400 without opening a socket, so both files clear it; it
+takes out the live WebSocket as well as the uploader. And
+`getTemporaryDirectory()` is a platform channel with nothing behind it here, so
+`installScratchPaths` replaces it. Left alone, the compressor throws inside the
+sync worker's own catch, which reports through `dart:developer` where the test
+runner never shows it.
 
 ## Architecture
 
@@ -309,18 +324,15 @@ Sessions outlive their logs by one step: a batch sends the session records its l
 
 ### Incomplete / TODO
 - Nothing outstanding for 1.0 in the SDK.
-- `make test-sdk-e2e` has no coverage of the database browser. The dashboard's Playwright tests use
-  a stub device answering canned JSON, and the Flutter tests use a real SQLite file with no server,
-  so nothing yet proves the two repos agree on that wire format. It has already bitten once: a fix
-  shipped with its Go half committed and its SDK half not, and every e2e test stayed green.
 
 ### Publishing
 
-**1.3.0 is what is on pub.dev**, so everything documented here is released and in people's apps.
-The wire format is now a published contract: a tar with `data.json`, and `sessions.json` alongside
-it since 1.2.0. Entries are read by name at the server, which is what lets an older SDK that sends
-only `data.json` keep working.
+**Everything here is published**, so it is all released and in people's apps. Checked against the
+pub.dev API on 2026-08-09, not remembered: `code_scout` 1.4.0, `code_scout_dio` 1.0.1,
+`code_scout_http` 1.0.1, `code_scout_talker` 1.0.0. Notes in this file have twice claimed a
+package was unpublished when it was not, so **ask pub.dev rather than trusting a line like this
+one**.
 
-**All three packages are published and match what is on disk** as of 2026-08-04: `code_scout`
-1.3.0, `code_scout_dio` 1.0.1, `code_scout_http` 1.0.1. The last gap was `code_scout_dio`, where
-pub.dev sat on 1.0.0 without the defensive try/catch around capture. Nothing is held back now.
+The wire format is a published contract: a tar with `data.json`, and `sessions.json` alongside it
+since 1.2.0. Entries are read by name at the server, which is what lets an older SDK that sends
+only `data.json` keep working.

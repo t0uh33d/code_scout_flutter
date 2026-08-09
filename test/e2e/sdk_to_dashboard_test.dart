@@ -14,7 +14,6 @@
 // integration tests skip without CS_TEST_DB. `make test-sdk-e2e` in the
 // code_scout repo starts a throwaway server and database and sets it.
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:code_scout/code_scout.dart';
@@ -22,18 +21,17 @@ import 'package:code_scout/src/log/log_persistence_service.dart';
 import 'package:code_scout/src/log/log_sync_worker.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:uuid/uuid.dart';
 
-const _email = 'sdk-e2e@test.local';
-const _password = 'sdk-e2e-password-123';
+import 'dashboard.dart';
+
 const _appVersion = '9.9.9';
 const _buildNumber = '4242';
 const _userID = 'sdk-e2e-user';
 
 void main() {
-  final env = Platform.environment['CS_E2E_BASE'];
+  final env = Dashboard.baseFromEnvironment;
   if (env == null) {
     test('SDK to dashboard', () {},
         skip: 'needs a running dashboard: set CS_E2E_BASE, '
@@ -41,7 +39,7 @@ void main() {
     return;
   }
 
-  final dash = _Dashboard(env.endsWith('/') ? env : '$env/');
+  final dash = Dashboard(env);
   final requestID = const Uuid().v4();
   // Captured in setUpAll so the assertions below can say which session they
   // expected, rather than only that they found nothing.
@@ -60,11 +58,7 @@ void main() {
     // the service always opens code_scout.db by the same name.
     final scratch = Directory.systemTemp.createTempSync('cs-sdk-e2e');
     await databaseFactory.setDatabasesPath(scratch.path);
-    // The compressor writes the archive to getTemporaryDirectory(), another
-    // platform channel with nothing behind it here. Left unanswered it throws
-    // inside the worker's own catch, which reports through dart:developer —
-    // so the upload silently never happens and the failure never prints.
-    PathProviderPlatform.instance = _Scratch(scratch.path);
+    installScratchPaths(scratch.path);
 
     // The app version and build come from a platform channel that nothing
     // answers in a host test. Mocking them is what turns the app_version:
@@ -260,103 +254,4 @@ Future<void> _awaitStored(int count) async {
   }
   final have = (await db.query('logs')).length;
   fail('only $have of $count logs reached SQLite');
-}
-
-/// The dashboard's browser session, which is what the setup and the assertions
-/// both need.
-///
-/// The SDK talks to /api/* with project headers. Making a project and reading
-/// logs back are behind the web session instead, so this signs in the way the
-/// login form does and keeps the cookie.
-class _Dashboard {
-  _Dashboard(this.base);
-
-  final String base;
-  String _cookie = '';
-  late String projectID;
-  late String projectSecret;
-
-  Future<void> signIn() async {
-    // One form post covers both cases: on a fresh instance the first account
-    // registers and becomes the super admin, and on a second run against the
-    // same instance the identical post logs in.
-    final res = await _send('POST', 'api/auth/submit',
-        contentType: 'application/x-www-form-urlencoded',
-        body: 'name=SDK+E2E'
-            '&email=${Uri.encodeQueryComponent(_email)}'
-            '&password=${Uri.encodeQueryComponent(_password)}'
-            '&confirm_password=${Uri.encodeQueryComponent(_password)}');
-
-    final cookie = res.cookies.where((c) => c.name == 'cs_session');
-    if (cookie.isEmpty) {
-      throw StateError('sign in failed (${res.status}): no session cookie');
-    }
-    _cookie = 'cs_session=${cookie.first.value}';
-  }
-
-  Future<void> createProject(String name) async {
-    final res = await _send('POST', 'api/project',
-        contentType: 'application/json',
-        body: jsonEncode({'name': name, 'description': 'SDK e2e'}));
-    if (res.status != 200) {
-      throw StateError('create project failed (${res.status}): ${res.body}');
-    }
-    final json = jsonDecode(res.body) as Map<String, dynamic>;
-    projectID = json['id'] as String;
-    // The one and only moment the plaintext secret is returned, which is
-    // exactly what an SDK needs and why the wizard shows it once.
-    projectSecret = json['secret_key'] as String;
-  }
-
-  /// The logs the dashboard holds for this project, newest first.
-  ///
-  /// The export endpoint rather than the log viewer: it answers with the stored
-  /// rows as JSON, so an assertion is about the data and not about markup.
-  Future<List<Map<String, dynamic>>> exportLogs({String query = ''}) async {
-    final res = await _send('GET',
-        'export/logs?project_id=$projectID&fmt=json&q=${Uri.encodeQueryComponent(query)}');
-    if (res.status != 200) {
-      throw StateError('export failed (${res.status}): ${res.body}');
-    }
-    return (jsonDecode(res.body) as List).cast<Map<String, dynamic>>();
-  }
-
-  Future<_Res> _send(String method, String path,
-      {String? body, String? contentType}) async {
-    final client = HttpClient();
-    try {
-      final req = await client.openUrl(method, Uri.parse('$base$path'));
-      // Sign in answers 303 and sets the cookie on that response. Following the
-      // redirect would hand back the dashboard's headers instead, with no
-      // Set-Cookie on them.
-      req.followRedirects = false;
-      if (_cookie.isNotEmpty) req.headers.set('Cookie', _cookie);
-      if (contentType != null) req.headers.set('Content-Type', contentType);
-      if (body != null) req.write(body);
-
-      final res = await req.close();
-      return _Res(res.statusCode, await res.transform(utf8.decoder).join(),
-          res.cookies);
-    } finally {
-      client.close();
-    }
-  }
-}
-
-/// Answers the one path_provider call the SDK makes, with a real directory.
-class _Scratch extends PathProviderPlatform {
-  _Scratch(this.path);
-
-  final String path;
-
-  @override
-  Future<String?> getTemporaryPath() async => path;
-}
-
-class _Res {
-  _Res(this.status, this.body, this.cookies);
-
-  final int status;
-  final String body;
-  final List<Cookie> cookies;
 }
