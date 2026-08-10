@@ -4,7 +4,12 @@ class GlobalVars {
 
   static const String codeScoutDB = "code_scout.db";
 
-  static const double iconSize = 50;
-  static const double iconHalfSize = iconSize / 2;
-  static const double iconContainerSize = 80;
+  /// The floating button. One number, because the clamp needs the whole of it
+  /// and the previous pair (a 50px image inside an 80px box) meant the button's
+  /// real size was never written down anywhere.
+  static const double buttonSize = 52;
+
+  /// The platform minimum for anything you tap. Visible ink can be smaller;
+  /// padding does the reach, which is what keeps a dense debug tool dense.
+  static const double minTouchTarget = 44;
 }

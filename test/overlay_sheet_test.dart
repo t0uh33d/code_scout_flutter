@@ -1,11 +1,17 @@
 import 'package:code_scout/code_scout.dart';
 import 'package:code_scout/src/csx_interface/log_buffer.dart';
 import 'package:code_scout/src/csx_interface/menu.dart';
+import 'package:code_scout/src/csx_interface/overlay_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// The overlay is the only part of Code Scout someone uses without a server,
 /// so its filters have to work on their own.
+///
+/// The Session tab's two tests moved out with the tab. What they covered —
+/// that the sync line says what the uploader is actually doing, and that the
+/// buffer's size is not presented as an upload queue — belongs to the Info
+/// screen and lands with it.
 void main() {
   setUp(LogBuffer.i.clear);
   tearDown(LogBuffer.i.clear);
@@ -72,24 +78,94 @@ void main() {
     expect(find.text('untagged log'), findsOneWidget);
   });
 
-  testWidgets('the level filter hides everything quieter', (tester) async {
+  // The whole reason the minimum-level threshold was replaced. A threshold
+  // cannot express "errors and info, not debug": asking for warnings took the
+  // info line with it, and there was no way to get it back without also taking
+  // debug. Independent toggles can, and this is the case that proves it.
+  testWidgets('level toggles are independent, not a floor', (tester) async {
     add('a debug line', level: LogLevel.debug);
     add('an info line');
-    add('a warning', level: LogLevel.warning);
     add('it broke', level: LogLevel.error);
 
     await pumpSheet(tester);
     expect(find.text('a debug line'), findsOneWidget);
 
-    await tester.tap(find.text('warning'));
+    await tester.tap(find.text('Debug'));
     await tester.pumpAndSettle();
 
-    expect(find.text('a debug line'), findsNothing);
-    expect(find.text('an info line'), findsNothing);
-    expect(find.text('a warning'), findsOneWidget);
-    // A level filter is a floor, not an equals: an error is louder than a
-    // warning and must not be filtered out by asking for warnings.
+    expect(find.text('a debug line'), findsNothing, reason: 'debug was switched off');
+    expect(find.text('an info line'), findsOneWidget,
+        reason: 'info is quieter than error and must survive turning debug off');
     expect(find.text('it broke'), findsOneWidget);
+
+    // And back on again.
+    await tester.tap(find.text('Debug'));
+    await tester.pumpAndSettle();
+    expect(find.text('a debug line'), findsOneWidget);
+  });
+
+  testWidgets('a level chip carries its count from this launch', (tester) async {
+    add('one', level: LogLevel.error);
+    add('two', level: LogLevel.error);
+    add('three');
+
+    await pumpSheet(tester);
+
+    // Scoped to the chip so it cannot match a log message that happens to be
+    // the same digit.
+    expect(
+      find.descendant(of: find.byType(CSxChip), matching: find.text('2')),
+      findsWidgets,
+      reason: 'the Error chip should count the two errors',
+    );
+  });
+
+  testWidgets('search filters, and turns follow off', (tester) async {
+    add('payment_sheet_shown');
+    add('cart_restored');
+
+    await pumpSheet(tester);
+    expect(find.byIcon(Icons.vertical_align_bottom), findsOneWidget,
+        reason: 'follow starts on');
+
+    await tester.enterText(find.byType(TextField).first, 'payment');
+    await tester.pumpAndSettle();
+
+    expect(find.text('payment_sheet_shown'), findsOneWidget);
+    expect(find.text('cart_restored'), findsNothing);
+    // You are reading, not watching.
+    expect(find.byIcon(Icons.pause), findsOneWidget, reason: 'searching pauses follow');
+  });
+
+  testWidgets('search reads the error and the tags, not only the message', (tester) async {
+    add('nothing useful in this message', tags: {'checkout'});
+
+    await pumpSheet(tester);
+    await tester.enterText(find.byType(TextField).first, 'checkout');
+    await tester.pumpAndSettle();
+
+    expect(find.text('nothing useful in this message'), findsOneWidget);
+  });
+
+  // Two empty states, never one. "Nothing logged yet" is false the moment a
+  // filter is what emptied the list, and it points a developer at their own
+  // logging calls instead of at the control they set.
+  testWidgets('an empty list says which kind of empty it is', (tester) async {
+    await pumpSheet(tester);
+    expect(find.text('Nothing logged yet'), findsOneWidget);
+
+    LogBuffer.i.add(LogEntry(level: LogLevel.info, message: 'hello', sessionID: 's'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'zzzz');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nothing logged yet'), findsNothing,
+        reason: 'a filter emptied the list, not the app');
+    expect(find.text('Nothing matches these filters'), findsOneWidget);
+
+    await tester.tap(find.text('Clear filters'));
+    await tester.pumpAndSettle();
+    expect(find.text('hello'), findsOneWidget);
   });
 
   testWidgets('the network tab shows calls, not phases', (tester) async {
@@ -122,21 +198,55 @@ void main() {
     expect(find.text('201'), findsOneWidget);
   });
 
-  testWidgets('the session tab says when nothing is being uploaded', (tester) async {
+  testWidgets('errors are counted by message, not listed one per occurrence', (tester) async {
+    add('Payment declined', level: LogLevel.error);
+    add('Payment declined', level: LogLevel.error);
+    add('Something else', level: LogLevel.error);
+
     await pumpSheet(tester);
-    await tester.tap(find.text('Session'));
+    await tester.tap(find.text('Errors'));
     await tester.pumpAndSettle();
 
-    // No credentials configured in a test, which is local mode — and the pane
-    // has to say so rather than implying logs are going somewhere.
-    expect(find.text('local only — no server configured'), findsOneWidget);
-    // Identity is opt-in, so an unnamed session says so plainly.
-    expect(find.text('anonymous'), findsOneWidget);
+    expect(find.text('Payment declined'), findsOneWidget,
+        reason: 'two occurrences are one row');
+    expect(find.text('×2'), findsOneWidget);
+    expect(find.text('Something else'), findsOneWidget);
+    expect(find.text('×1'), findsOneWidget);
   });
 
-  // The sheet is something you tab across constantly while chasing one bug.
-  // Sizing it to whichever tab is open means it jumps every time, and the tab
-  // row moves out from under your thumb.
+  // The one empty state that is good news, and the one a healthy app shows
+  // permanently. It must not read like "nothing logged yet".
+  testWidgets('no errors is good news, and says the log count', (tester) async {
+    add('one');
+    add('two');
+
+    await pumpSheet(tester);
+    await tester.tap(find.text('Errors'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No errors this launch'), findsOneWidget);
+    expect(find.textContaining('2 logs'), findsOneWidget,
+        reason: 'so it cannot be mistaken for the SDK being switched off');
+  });
+
+  // Opening the sheet does not clear the unseen count; opening Errors does. A
+  // glance at Logs should not silently discard the signal.
+  testWidgets('only the Errors tab clears the unseen count', (tester) async {
+    add('it broke', level: LogLevel.error);
+    expect(LogBuffer.i.unseenErrors, 1);
+
+    await pumpSheet(tester);
+    expect(LogBuffer.i.unseenErrors, 1, reason: 'opening the sheet is not looking at errors');
+
+    await tester.tap(find.text('Network'));
+    await tester.pumpAndSettle();
+    expect(LogBuffer.i.unseenErrors, 1, reason: 'nor is any other tab');
+
+    await tester.tap(find.text('Errors'));
+    await tester.pumpAndSettle();
+    expect(LogBuffer.i.unseenErrors, 0);
+  });
+
   testWidgets('the sheet keeps its height across tabs', (tester) async {
     add('one log');
     await pumpSheet(tester);
@@ -144,49 +254,22 @@ void main() {
     double height() => tester.getSize(find.byType(CSxInterface)).height;
     final onLogs = height();
 
-    for (final tab in ['Network', 'Live', 'Session', 'Logs']) {
+    for (final tab in ['Network', 'Errors', 'Logs']) {
       await tester.tap(find.text(tab));
       await tester.pumpAndSettle();
       expect(height(), onLogs, reason: 'the sheet resized on the $tab tab');
     }
   });
 
-  // The screen used to show one number labelled "Logs held" next to the word
-  // Sync. That number was the in-memory buffer the Logs tab draws from, which
-  // never drains — so a launch whose logs had all uploaded still read as nine
-  // logs stuck in a queue. Two numbers now, named for what they each are.
-  //
-  // No database is set up in this file on purpose. The count comes from SQLite,
-  // and a widget test's fake clock never completes real file I/O — so the pane
-  // has to stay usable while that number is unavailable, which is also true on
-  // a device whose database will not open.
-  testWidgets('the session tab separates what is on screen from what is queued',
-      (tester) async {
-    add('one');
-    add('two');
-    add('three');
-
+  testWidgets('the live pill is reachable from every tab', (tester) async {
+    add('one log');
     await pumpSheet(tester);
-    await tester.tap(find.text('Session'));
-    await tester.pumpAndSettle();
 
-    // _Fact draws its label uppercased.
-    expect(find.text('IN THIS VIEW'), findsOneWidget);
-    expect(find.text('WAITING TO UPLOAD'), findsOneWidget);
-    // Scoped to the pane: the sheet header carries the same count.
-    expect(
-      find.descendant(of: find.byType(ListView), matching: find.text('3')),
-      findsOneWidget,
-      reason: 'three logs are in the buffer',
-    );
-  });
-
-  testWidgets('an empty buffer explains itself', (tester) async {
-    await pumpSheet(tester);
-    expect(find.text('Nothing to show'), findsOneWidget);
-
-    await tester.tap(find.text('Network'));
-    await tester.pumpAndSettle();
-    expect(find.text('No network calls'), findsOneWidget);
+    for (final tab in ['Logs', 'Network', 'Errors']) {
+      await tester.tap(find.text(tab));
+      await tester.pumpAndSettle();
+      expect(find.text('Go live'), findsOneWidget,
+          reason: 'pairing is a connection control, not a tab, so it shows on $tab');
+    }
   });
 }

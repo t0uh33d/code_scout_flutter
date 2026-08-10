@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:code_scout/code_scout.dart';
+import 'package:code_scout/src/utils/stack_trace_parser.dart';
 import 'package:flutter/foundation.dart';
 
 /// What the on-device overlay reads.
@@ -27,18 +28,71 @@ class LogBuffer extends ChangeNotifier {
 
   int get length => _entries.length;
 
+  int _unseenErrors = 0;
+
+  /// Errors and fatals since the Errors tab was last opened.
+  ///
+  /// One counter behind two indicators: the number on the floating button,
+  /// which is the only thing on screen, and the dot on the Errors tab, where
+  /// the count is already one tap away. Levels below error are deliberately not
+  /// counted — a badge that counts every log is a number that is always large
+  /// and never means anything.
+  int get unseenErrors => _unseenErrors;
+
+  /// Opening the Errors tab is what clears it, not opening the sheet. A glance
+  /// at Logs should not silently discard the signal.
+  void markErrorsSeen() {
+    if (_unseenErrors == 0) return;
+    _unseenErrors = 0;
+    if (hasListeners) notifyListeners();
+  }
+
   void add(LogEntry entry) {
     _entries.addFirst(entry);
     while (_entries.length > maxEntries) {
       _entries.removeLast();
+    }
+    if (entry.level.value >= LogLevel.error.value && entry.level != LogLevel.off) {
+      _unseenErrors++;
     }
     // Only when the overlay is open. A chatty app would otherwise schedule a
     // rebuild per log for a widget tree nobody is looking at.
     if (hasListeners) notifyListeners();
   }
 
+  /// The errors and fatals in the buffer, newest first, collapsed by exact
+  /// message so the same failure firing eight times is one row that counts.
+  ///
+  /// Deliberately not the server's fingerprint. `internal/domain/fingerprint.go`
+  /// blanks the varying parts of a message, and porting it here would put one
+  /// algorithm in two repos to drift apart. The two are answering different
+  /// questions anyway: this counts a launch, the dashboard counts a project.
+  List<ErrorGroup> errorGroups() {
+    final byKey = <String, List<LogEntry>>{};
+    final order = <String>[];
+
+    for (final entry in _entries) {
+      if (entry.level.value < LogLevel.error.value) continue;
+      if (entry.level == LogLevel.off) continue;
+      // A network failure's message is the literal string "Network Error" for
+      // every one the SDK reports, so collapsing on it alone would make a
+      // single meaningless row. The request id keeps the calls apart.
+      final key = entry.isNetworkCall
+          ? 'net:${entry.message}:${entry.requestId ?? ''}'
+          : 'log:${entry.message}:${entry.error ?? ''}';
+      if (!byKey.containsKey(key)) {
+        byKey[key] = [];
+        order.add(key);
+      }
+      byKey[key]!.add(entry);
+    }
+
+    return order.map((k) => ErrorGroup(byKey[k]!)).toList(growable: false);
+  }
+
   void clear() {
     _entries.clear();
+    _unseenErrors = 0;
     if (hasListeners) notifyListeners();
   }
 
@@ -76,6 +130,39 @@ class LogBuffer extends ChangeNotifier {
     }
 
     return order.map((id) => OverlayCall(id, byRequest[id]!)).toList();
+  }
+}
+
+/// One error, and the times it happened this launch.
+class ErrorGroup {
+  ErrorGroup(this.occurrences);
+
+  /// Newest first, because that is the order they came out of the buffer.
+  final List<LogEntry> occurrences;
+
+  LogEntry get latest => occurrences.first;
+
+  int get count => occurrences.length;
+
+  String get message => latest.message;
+
+  LogLevel get level => latest.level;
+
+  bool get isNetwork => latest.isNetworkCall;
+
+  /// The first frame that is not framework noise, which is the one worth
+  /// putting under the message. The one you want is never the top one.
+  ///
+  /// [StackCallDetails] paths arrive with `package:` already stripped by the
+  /// parser's regex, and a `dart:` frame never matches that regex at all, so
+  /// the only prefix left to skip is Flutter's own.
+  StackCallDetails? get appFrame {
+    for (final frame in latest.stackCallDetails ?? const <StackCallDetails>[]) {
+      final path = frame.path ?? '';
+      if (path.isEmpty || path.startsWith('flutter/')) continue;
+      return frame;
+    }
+    return null;
   }
 }
 
@@ -141,6 +228,18 @@ class OverlayCall {
   }
 
   bool get failed => hasError || (statusCode != null && statusCode! >= 400);
+
+  /// The response's size on the wire, or null when nobody recorded one.
+  ///
+  /// Deliberately not `body.length`. By the time a body reaches the buffer,
+  /// redaction has replaced values with a ten-character marker and truncation
+  /// has cut anything over 32 KB, so measuring it would report a number that is
+  /// not the size of anything. Until the companion packages carry a byte count
+  /// taken before both, this is null and the row shows a dash.
+  int? get responseBytes {
+    final value = phase(NetworkCallPhase.response)?.metadata?['byte_length'];
+    return value is int ? value : null;
+  }
 
   /// Request to response, or null while a call is still in flight — timing an
   /// unfinished call against now would grow every time the list rebuilt.
