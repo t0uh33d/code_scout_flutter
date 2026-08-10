@@ -172,7 +172,10 @@ void main() {
       final text = out as String;
       expect(utf8.encode(text).length, lessThan(400));
       expect(text, contains('truncated by Code Scout'));
-      expect(text, contains('KB total'));
+      // The note reports the size of the whole body, not the amount removed.
+      // Somebody staring at it wants to know what they are missing.
+      expect(text, contains('The whole body was'));
+      expect(text, contains('KB'));
     });
 
     test('the cap still applies with nothing redacted', () {
