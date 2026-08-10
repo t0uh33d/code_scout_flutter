@@ -228,6 +228,16 @@ class CodeScout {
     }
   }
 
+  /// Writes a log and waits for it, throwing if the write failed.
+  ///
+  /// The shorthand methods and [log] swallow everything, because a logging call
+  /// must never be the reason an app falls over. This is the deliberate
+  /// exception: await it when you actually need to know the log was stored, for
+  /// example the last thing written before a controlled shutdown.
+  ///
+  /// It still returns normally when a log is dropped by the level gate, the tag
+  /// filter or sampling. Those are not failures, they are the configuration
+  /// doing its job.
   Future<void> logMessage({
     required LogLevel level,
     required String message,
@@ -246,7 +256,7 @@ class CodeScout {
       sessionID: CodeScout.instance.currentSessionId,
     );
 
-    await logEntry.processLogEntry();
+    await logEntry.processLogEntry(rethrowErrors: true);
   }
 
   /// Fire-and-forget convenience method. Errors are caught internally

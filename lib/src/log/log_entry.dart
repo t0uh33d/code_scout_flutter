@@ -89,15 +89,30 @@ class LogEntry {
     };
   }
 
-  Future<void> processLogEntry({NetworkData? networkData}) async {
+  /// Runs one log through the pipeline.
+  ///
+  /// [rethrowErrors] is what separates the fire-and-forget shorthand from
+  /// [CodeScout.logMessage]. A logging call must never be able to fail the app
+  /// that made it, so everything here is caught by default. Somebody who
+  /// deliberately awaited the call and wants to know whether the write happened
+  /// asks for the exception instead.
+  Future<void> processLogEntry({
+    NetworkData? networkData,
+    bool rethrowErrors = false,
+  }) async {
     try {
       CodeScoutConfiguration cfg = CodeScout.instance.configuration;
       if (!cfg.logging.shouldLog(this)) {
         return;
       }
 
-      CSxPrinter printer = CSxPrinter(this);
-      printer.printToConsole(networkData: networkData);
+      // Honoured, rather than declared and ignored. This was set from
+      // kDebugMode and never read, so every release build printed every log to
+      // the platform console whatever the app asked for.
+      if (cfg.logging.printToConsole) {
+        CSxPrinter printer = CSxPrinter(this);
+        printer.printToConsole(networkData: networkData);
+      }
 
       // The on-device overlay reads this, not the table: rows are deleted from
       // SQLite as soon as they upload, so the overlay would empty out behind
@@ -126,6 +141,7 @@ class LogEntry {
       await LogPersistenceService.i.saveLogEntry(this);
     } catch (e, st) {
       log('CodeScout: Failed to process log entry: $e', stackTrace: st);
+      if (rethrowErrors) rethrow;
     }
   }
 }
