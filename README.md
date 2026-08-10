@@ -42,15 +42,18 @@ credentials later, when you want them somewhere you can search.
 
 ## Features
 
-- **Structured logging** with levels (debug, info, warning, error, fatal), tags, and metadata
+- **Structured logging** with seven levels (verbose, debug, info, warning, error, fatal, and
+  system for the SDK's own notes), plus tags and metadata
 - **Network interception** for Dio and `http`. Correlates request, response, and error by request ID
 - **Backs off when told to**. A throttled or busy server is honoured, not retried into the ground
 - **Redaction you control**. Name what to strip and it never reaches disk or the network; name nothing and you see exactly what your app sent
 - **Sessions and devices**. Every app launch is recorded with the device it ran on and the build it was, so you can ask what happened on one phone
 - **Local persistence** in SQLite so logs survive app restarts
 - **Automatic batch sync**. Compresses logs to tar.gz and uploads on a configurable interval
-- **Zero third-party HTTP deps**. All server communication uses `dart:io`
-- **In-app overlay**. Read your logs and network calls on the device, with no server needed at all
+- **No HTTP client dependency**. The core talks to your server with `dart:io`, so adding Code
+  Scout never drags Dio or `package:http` into an app that does not already use them
+- **In-app panel**. Read your logs, network calls and errors on the device itself, and browse
+  the app's own database, with no server needed at all
 - **Lightweight**, designed to add minimal overhead to your app
 
 ## Packages
@@ -89,34 +92,63 @@ flutter pub add code_scout_talker
 ```
 
 ```dart
-final talker = Talker(observer: const CodeScoutTalkerObserver());
+final talker = Talker(observer: CodeScoutTalkerObserver());
 ```
 
 ## Usage
 
 ### Initialize
 
-Call `init()` early in your app (e.g. after the first frame):
+Code Scout needs a `BuildContext` to place its floating button into your widget tree, so `init()`
+runs from inside a widget after the first frame rather than at the top of `main()`. That is where
+the `context` in the sample below comes from.
 
 ```dart
 import 'package:code_scout/code_scout.dart';
 
-await CodeScout.instance.init(
-  freshContextFetcher: () => context,
-  configuration: CodeScoutConfiguration(
-    logging: LoggingBehavior(minimumLevel: LogLevel.all),
-    projectCredentials: ProjectCredentials(
-      link: 'http://your-server:24275/',
-      projectID: 'your-project-id',
-      projectSecret: 'your-project-secret',
-    ),
-    sync: LogSyncBehavior(
-      syncInterval: Duration(seconds: 30),
-      maxBatchSize: 100,
-    ),
-  ),
-);
+class _AppState extends State<App> {
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await CodeScout.instance.init(
+        // How the panel finds a live context again after you navigate away.
+        freshContextFetcher: () => context,
+        configuration: CodeScoutConfiguration(
+          logging: LoggingBehavior(minimumLevel: LogLevel.all),
+          projectCredentials: ProjectCredentials(
+            link: 'http://192.168.1.24:24275/',
+            projectID: 'your-project-id',
+            projectSecret: 'your-project-secret',
+          ),
+          sync: LogSyncBehavior(
+            syncInterval: Duration(seconds: 30),
+            maxBatchSize: 100,
+          ),
+        ),
+      );
+    });
+  }
+}
 ```
+
+Leave `freshContextFetcher` out and everything still works, you simply do not get the floating
+button.
+
+Three things in there are worth knowing before they cost you an afternoon.
+
+`minimumLevel` defaults to `LogLevel.info`, and that check runs before the console printer, so at
+the default `scout.d()` and `scout.v()` produce nothing at all. Use `LogLevel.all` while you are
+developing.
+
+The `sync:` block has no default. Leave it out and logs are written to the device and never
+uploaded, and the only complaint is a single line in the debug console.
+
+The `link` is a real address on your network, not `localhost`. On a physical device `localhost`
+means the phone itself. It must start with `http://` or `https://`, contain a host, and end with
+a trailing slash, and `ProjectCredentials` throws immediately if it does not. Android also blocks
+plain HTTP by default, so use `https` or allow cleartext for that host while developing.
 
 ### Log messages
 
@@ -154,20 +186,25 @@ await CodeScout.instance.logMessage(
 
 ### Capture network calls
 
-Network interception is provided through separate companion packages so the core SDK stays dependency-free. Each package is a one-liner to set up.
+Network interception lives in separate companion packages, so installing Code Scout never adds
+Dio or `package:http` to an app that does not already use one. Each package takes a single line
+to set up.
 
 #### Dio
 
 Add `code_scout_dio` to your dependencies, then attach the interceptor:
 
 ```dart
+import 'package:dio/dio.dart';
 import 'package:code_scout_dio/code_scout_dio.dart';
 
 final dio = Dio();
 dio.interceptors.add(CodeScoutDioInterceptor());
 ```
 
-Every request, response, and error flowing through this Dio instance will be automatically captured.
+Every request and every response or error flowing through this Dio instance is captured from
+then on. Note that dio treats a 4xx or 5xx as an error rather than a response, so those arrive
+through the error path and are logged at error level.
 
 #### http
 
@@ -183,11 +220,20 @@ final client = CodeScoutHttpClient(client: http.Client());
 final response = await client.get(Uri.parse('https://api.example.com/data'));
 ```
 
-`CodeScoutHttpClient` extends `http.BaseClient`, so it's a drop-in replacement anywhere you use `http.Client`.
+`CodeScoutHttpClient` extends `http.BaseClient`, so it is a drop-in replacement anywhere you
+already use an `http.Client`. Pass your existing client in as shown above. If you leave the
+`client:` argument out, the wrapper builds a plain new client instead, and any base headers,
+proxy or timeout you had configured are quietly lost.
 
 #### How it works
 
-Both interceptors call `NetworkManager.i.processNetworkRequest/Response/Error()` under the hood. Each network call gets a unique `requestId` that correlates the request, response, and error phases together, giving you a complete picture of every API call.
+Each call writes one log when the request goes out and a second when it comes back, and that
+second one is either a response or an error but never both. The pair shares a request id, which
+is how the panel and the dashboard know to show them as a single row.
+
+If your Network tab stays empty, open the panel and tap the info icon. Every companion package
+announces itself to the SDK when you construct it, so the Info screen can tell you whether an
+interceptor is genuinely missing or is simply installed and has not seen a call yet.
 
 ### Name the person using the app
 
@@ -273,15 +319,35 @@ The rate can also be set per project in the dashboard, under project settings. T
 
 Sampling only affects what is stored and uploaded. The console and the in-app overlay show every log either way, so a sampled-out launch is not a launch you cannot debug on the device in front of you.
 
-### The in-app overlay
+### The in-app panel
 
-A floating button draws over your app. Tapping it opens a sheet with three tabs:
+A floating button draws over your app, and it tells you two things before you even open it. It
+carries a count of errors you have not looked at yet, and it shows a ring while a live session
+is running so the person holding the phone knows they are being watched.
 
-- **Logs**. Everything this launch has logged, newest first, with the same level and tag filters the dashboard has. Tap a row to see its error, stack trace and metadata.
-- **Network**. Request, response and error paired into one row per call, with the status and how long it took.
-- **Session**. The session id, installation id, device, app version and user. Long-press any of them to copy, which is what you want when filing a bug.
+Tapping it opens a sheet with three tabs.
 
-It reads an in-memory buffer of the current launch rather than the server, so **it works with no server configured at all**. Drop the package in, tap the button, read your logs.
+**Logs** shows everything this launch has written, newest first. You can search it, switch
+individual levels on and off, filter by tag, and pause the list when it is arriving faster than
+you can read. Tap any row to see its error, stack trace and metadata laid out properly rather
+than printed as one long line.
+
+**Network** shows one row per call with its status, how long it took, and everything it sent and
+received, split into request, response and timing.
+
+**Errors** shows errors and fatals on their own and counts them, so the same failure happening
+fifty times is a single line instead of the whole screen.
+
+Two more screens sit behind icons in the sheet header. **Data** browses your app's own SQLite
+tables, `shared_preferences` and Hive boxes, read only, on the device. It only appears once you
+have called `registerDatabase`. **Info** tells you whether anything is reaching a dashboard, what
+is currently being captured, and what state the uploads are in. If you are wondering why nothing
+has arrived, that is the screen to open, because it runs a connection test and names the step
+that failed.
+
+The panel reads an in-memory buffer of the current launch rather than the server, so **it works
+with no server configured at all**. It holds the last 500 logs and starts empty again when the
+app restarts. Drop the package in, tap the button, read your logs.
 
 ```dart
 CodeScout.instance.showIcon();   // Show floating button
@@ -296,18 +362,19 @@ and a developer on another, pair the two:
 
 1. On the dashboard, open the project's **Live devices** and press **New session**.
    It shows a six character code.
-2. On the phone, open the Code Scout overlay, go to the **Live** tab, type the
-   code, and press **Connect**.
+2. On the phone, open the Code Scout panel and tap the **Go live** pill in the header.
+   Type the code and press Connect. The pill reads Pairing while it connects and then
+   Live for as long as the session lasts.
 
 Every log that launch produces now arrives on the dashboard as it happens, with
 the same level filters the log viewer has. Filter to a tag, tap through a flow,
 and watch the events confirm.
 
 The session ends when you stop it, when the app closes, or when the network
-drops. Nothing streamed is stored on the server unless somebody turns on
-Persist, so this is safe to point at a build you would not want in your logs.
+drops. Nothing streamed is written to your server at all, so this is safe to
+point at a build you would not want in your stored logs.
 
-You can drive it yourself instead of using the overlay:
+You can drive it from code instead of using the panel:
 
 ```dart
 final started = await CodeScout.instance.startLiveSession('4K7Q2P');
@@ -345,8 +412,12 @@ Flutter App                                Code Scout Server
 1. Logs are written to a local SQLite database
 2. A periodic timer picks up unsync'd logs, marks them as syncing, compresses them in a background isolate, and uploads via `dart:io`
 3. On success, logs are deleted locally. On failure, they're rolled back and retried next cycle
-4. After 5 consecutive failures the sync worker stops automatically to avoid battery drain
-5. A `429` or `503` is not a failure. The worker reads `Retry-After`, goes quiet for that long, and resumes. It never counts toward the auto-stop, so a server protecting itself can never permanently silence an SDK
+4. After 5 failures in a row the worker waits five minutes before trying again. It pauses, it
+   does not stop: the counter resets and uploads resume on their own, so a server that was down
+   for a minute does not cost you every log until somebody restarts the app
+5. A `429` or `503` is not counted as a failure at all. The worker reads `Retry-After`, goes
+   quiet for exactly that long, and resumes, so a server protecting itself can never silence an
+   SDK for longer than it asked for
 6. A `413` halves the batch and retries, growing back on success
 
 ## Configuration
