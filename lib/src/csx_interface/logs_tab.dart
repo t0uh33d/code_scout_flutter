@@ -51,6 +51,65 @@ class _LogsTabState extends State<LogsTab> {
         _query = '';
       });
 
+  void _toggleLevel(LogLevel level) {
+    setState(() {
+      if (!_hidden.remove(level)) _hidden.add(level);
+    });
+  }
+
+  /// The same chips, in a sheet, for a viewport too short to stack them.
+  Future<void> _openFilters(
+    BuildContext context,
+    Map<LogLevel, int> counts,
+    List<String> tags,
+  ) {
+    return showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: CSxColors.background,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setSheet) {
+          void refresh(VoidCallback change) {
+            change();
+            // Both, because the sheet and the list behind it each hold their
+            // own element tree and neither rebuilds the other.
+            setSheet(() {});
+          }
+
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CSxSectionHeader(title: 'Levels'),
+                _LevelRow(
+                  counts: counts,
+                  hidden: _hidden,
+                  onTap: (l) => refresh(() => _toggleLevel(l)),
+                ),
+                if (tags.isNotEmpty) ...[
+                  const CSxSectionHeader(title: 'Tags'),
+                  _TagRow(
+                    tags: tags,
+                    included: _included,
+                    excluded: _excluded,
+                    onTap: (t) => refresh(() => _cycleTag(t)),
+                  ),
+                ],
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: CSxButton(
+                    label: 'Done',
+                    expand: true,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _cycleTag(String tag) {
     setState(() {
       if (_included.remove(tag)) {
@@ -94,66 +153,73 @@ class _LogsTabState extends State<LogsTab> {
           counts[entry.level] = (counts[entry.level] ?? 0) + 1;
         }
 
-        return Column(
-          children: [
-            CSxSearchField(
-              hint: 'Search messages',
-              value: _query,
-              // Searching pauses follow automatically.
-              onChanged: (q) => setState(() {
-                _query = q;
-                if (q.isNotEmpty) _follow = false;
-              }),
-              actions: [
-                CSxIconButton(
-                  icon: _follow ? Icons.vertical_align_bottom : Icons.pause,
-                  tooltip: _follow ? 'Following' : 'Paused',
-                  active: _follow,
-                  onPressed: () => setState(() => _follow = !_follow),
-                ),
-                CSxIconButton(
-                  icon: Icons.backspace_outlined,
-                  tooltip: 'Clear',
-                  onPressed: all.isEmpty ? null : LogBuffer.i.clear,
-                ),
-              ],
-            ),
-            CSxChipRow(
+        final tags = LogBuffer.i.tags();
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // Two chip rows plus a search bar is 148px of chrome above the
+            // list. On a landscape phone that leaves about two rows, which is
+            // not a log viewer, so under a short viewport the filters collapse
+            // into one control that opens them in a sheet.
+            final compact = constraints.maxHeight < 320;
+            final active = _hidden.length + _included.length + _excluded.length;
+
+            return Column(
               children: [
-                for (final level in kFilterLevels)
-                  CSxChip(
-                    label: _title(level.name),
-                    // Counts from this launch, so an empty list explains
-                    // itself: the level is off, not the app quiet.
-                    count: counts[level] ?? 0,
-                    dot: levelColor(level.name),
-                    state: _hidden.contains(level) ? ChipState.off : ChipState.on,
-                    onTap: () => setState(() {
-                      if (!_hidden.remove(level)) _hidden.add(level);
-                    }),
-                  ),
-              ],
-            ),
-            _TagRow(
-              tags: LogBuffer.i.tags(),
-              included: _included,
-              excluded: _excluded,
-              onTap: _cycleTag,
-            ),
-            const Divider(height: 1, color: CSxColors.border),
-            Expanded(
-              child: visible.isEmpty
-                  ? _empty(all.length)
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      // The buffer is newest first, so following the newest log
-                      // means staying at the top rather than pinning to the
-                      // bottom. Paused simply stops rebuilding the scroll.
-                      itemCount: visible.length,
-                      itemBuilder: (context, i) => LogRow(entry: visible[i]),
+                CSxSearchField(
+                  hint: 'Search messages',
+                  value: _query,
+                  // Searching pauses follow automatically.
+                  onChanged: (q) => setState(() {
+                    _query = q;
+                    if (q.isNotEmpty) _follow = false;
+                  }),
+                  actions: [
+                    if (compact)
+                      CSxIconButton(
+                        icon: Icons.filter_alt_outlined,
+                        tooltip: active == 0 ? 'Filters' : 'Filters ($active)',
+                        active: active > 0,
+                        onPressed: () => _openFilters(context, counts, tags),
+                      ),
+                    CSxIconButton(
+                      icon: _follow ? Icons.vertical_align_bottom : Icons.pause,
+                      tooltip: _follow ? 'Following' : 'Paused',
+                      active: _follow,
+                      onPressed: () => setState(() => _follow = !_follow),
                     ),
-            ),
-          ],
+                    CSxIconButton(
+                      icon: Icons.backspace_outlined,
+                      tooltip: 'Clear',
+                      onPressed: all.isEmpty ? null : LogBuffer.i.clear,
+                    ),
+                  ],
+                ),
+                if (!compact) ...[
+                  _LevelRow(counts: counts, hidden: _hidden, onTap: _toggleLevel),
+                  _TagRow(
+                    tags: tags,
+                    included: _included,
+                    excluded: _excluded,
+                    onTap: _cycleTag,
+                  ),
+                ],
+                const Divider(height: 1, color: CSxColors.border),
+                Expanded(
+                  child: visible.isEmpty
+                      ? _empty(all.length)
+                      : ListView.builder(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          // The buffer is newest first, so following the newest
+                          // log means staying at the top rather than pinning to
+                          // the bottom. Paused simply stops rebuilding.
+                          itemCount: visible.length,
+                          itemBuilder: (context, i) => LogRow(entry: visible[i]),
+                        ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -178,7 +244,32 @@ class _LogsTabState extends State<LogsTab> {
     );
   }
 
-  static String _title(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+}
+
+class _LevelRow extends StatelessWidget {
+  const _LevelRow({required this.counts, required this.hidden, required this.onTap});
+
+  final Map<LogLevel, int> counts;
+  final Set<LogLevel> hidden;
+  final ValueChanged<LogLevel> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return CSxChipRow(
+      children: [
+        for (final level in kFilterLevels)
+          CSxChip(
+            label: level.name[0].toUpperCase() + level.name.substring(1),
+            // Counts from this launch, so an empty list explains itself: the
+            // level is off, not the app quiet.
+            count: counts[level] ?? 0,
+            dot: levelColor(level.name),
+            state: hidden.contains(level) ? ChipState.off : ChipState.on,
+            onTap: () => onTap(level),
+          ),
+      ],
+    );
+  }
 }
 
 class _TagRow extends StatelessWidget {

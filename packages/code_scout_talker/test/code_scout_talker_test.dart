@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:talker/talker.dart';
 
 void main() {
-  const observer = CodeScoutTalkerObserver();
+  final observer = CodeScoutTalkerObserver();
 
   cs.LogLevel levelOf(LogLevel? from, {cs.LogLevel fallback = cs.LogLevel.info}) =>
       observer.map(TalkerData('m', logLevel: from), fallback: fallback).level;
@@ -92,7 +92,7 @@ void main() {
     });
 
     test('configured tags are added to the key', () {
-      const tagged = CodeScoutTalkerObserver(tags: {'talker'});
+      final tagged = CodeScoutTalkerObserver(tags: {'talker'});
       expect(tagged.map(TalkerData('m', key: 'bloc-event'), fallback: cs.LogLevel.info).tags,
           {'talker', 'bloc-event'});
     });
@@ -102,7 +102,7 @@ void main() {
     });
 
     test('configured tags apply even when Talker sets no key', () {
-      const tagged = CodeScoutTalkerObserver(tags: {'talker'});
+      final tagged = CodeScoutTalkerObserver(tags: {'talker'});
       expect(tagged.map(TalkerData('m'), fallback: cs.LogLevel.info).tags, {'talker'});
     });
   });

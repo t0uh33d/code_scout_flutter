@@ -32,7 +32,12 @@ class CodeScoutTalkerObserver extends TalkerObserver {
   /// [tags] are added to every log this forwards, on top of the tag taken from
   /// Talker's own log key. Useful for telling forwarded logs apart when an app
   /// calls both Talker and Code Scout directly.
-  const CodeScoutTalkerObserver({this.tags = const {}});
+  /// Says it is here as soon as it is built, like the other two companions, so
+  /// Info can report all three the same way. Not const for that reason: a const
+  /// constructor cannot run anything.
+  CodeScoutTalkerObserver({this.tags = const {}}) {
+    cs.NetworkManager.i.registerIntegration('talker');
+  }
 
   final Set<String> tags;
 

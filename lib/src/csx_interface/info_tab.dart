@@ -315,19 +315,19 @@ class _InfoScreenState extends State<InfoScreen> {
 
     return [
       const CSxSectionHeader(title: 'Network interception'),
+      // All three register when they are constructed, so absent really does
+      // mean not installed rather than not used yet.
       _Steps(steps: [
-        // dio and http register when they are constructed, so absent really
-        // does mean not installed.
-        (loaded.contains('dio') ? _StepState.ok : _StepState.skipped, 'Dio interceptor',
-            loaded.contains('dio') ? null : 'not installed'),
-        (loaded.contains('http') ? _StepState.ok : _StepState.skipped, 'HTTP client wrapper',
-            loaded.contains('http') ? null : 'not installed'),
-        // Talker's observer is const, so it cannot register when it is built
-        // without breaking `const CodeScoutTalkerObserver()` for anyone already
-        // using it. It registers on the first log it forwards, so the honest
-        // word for its absence is "not seen", not "not installed".
-        (loaded.contains('talker') ? _StepState.ok : _StepState.skipped, 'Talker observer',
-            loaded.contains('talker') ? null : 'not seen'),
+        for (final (key, label) in const [
+          ('dio', 'Dio interceptor'),
+          ('http', 'HTTP client wrapper'),
+          ('talker', 'Talker observer'),
+        ])
+          (
+            loaded.contains(key) ? _StepState.ok : _StepState.skipped,
+            label,
+            loaded.contains(key) ? null : 'not installed',
+          ),
       ]),
       if (loaded.isEmpty) ...[
         const CSxHint(

@@ -117,14 +117,22 @@ class OverlayManager {
       // Tight, not a maximum. With only a maximum the sheet takes the height of
       // whichever tab is open, so it grew and shrank on every switch. One size
       // for all of them is what makes the tab row stay where you last tapped it.
+      //
+      // Nearly all of a short screen, 85% of a tall one. In landscape a phone
+      // is around 400px high, and 85% of that leaves the list about two rows
+      // once the header, tabs and filters are stacked above it.
       constraints: BoxConstraints.tightFor(
-        height: MediaQuery.of(context).size.height * 0.85,
+        height: MediaQuery.of(context).size.height * (_isShort(context) ? 0.97 : 0.85),
       ),
       builder: (context) {
         return CSxInterface(initialTab: tab);
       },
     ).whenComplete(() => isBottomSheetVisible = false);
   }
+
+  /// A viewport too short to stack the sheet's chrome and still leave a list
+  /// worth reading. Landscape on a phone, or a keyboard open.
+  static bool _isShort(BuildContext context) => MediaQuery.of(context).size.height < 520;
 
   void insertOverlay(OverlayEntry entry) {
     Future.delayed(const Duration(seconds: 0), () {

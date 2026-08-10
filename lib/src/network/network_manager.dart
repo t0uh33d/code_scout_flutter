@@ -67,18 +67,6 @@ class NetworkManager {
     });
   }
 
-  /// Does nothing. Eviction is automatic now, and this never ran: no code in
-  /// this package ever called it, so no app was ever running the timer it
-  /// started.
-  ///
-  /// Kept as a no-op for one release rather than deleted, because it is public
-  /// on a published package and removing it would break a build to no purpose.
-  @Deprecated('Stale requests are evicted automatically. Delete this call.')
-  void startCleanupTimer() {}
-
-  @Deprecated('Stale requests are evicted automatically. Delete this call.')
-  void stopCleanupTimer() {}
-
   void processNetworkRequest(NetworkRequestData request) {
     // Telemetry degrades to silence before init — never fail the caller.
     if (!CodeScout.instance.isInitialized) return;

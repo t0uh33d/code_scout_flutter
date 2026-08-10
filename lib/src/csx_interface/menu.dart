@@ -83,6 +83,8 @@ class _CSxInterfaceState extends State<CSxInterface> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+
     // Material, not a coloured Container: the rows are InkWells, which paint
     // their background and ink on the nearest Material ancestor. A DecoratedBox
     // in between hides both, so every tap looks dead.
@@ -90,21 +92,36 @@ class _CSxInterfaceState extends State<CSxInterface> {
       color: CSxColors.background,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
       clipBehavior: Clip.antiAlias,
-      child: SafeArea(
-        top: false,
-        child: OverlayNavigator(
-          push: push,
-          pop: pop,
-          child: Column(
-            children: [
-              const _Grip(),
-              if (_stack.isEmpty) ...[
-                _Header(onSelect: _select),
-                _Tabs(active: _tab, onSelect: _select),
-                Expanded(child: _body()),
-              ] else
-                Expanded(child: _stack.last),
-            ],
+      child: MediaQuery(
+        // The host app's text scale still applies, capped. Measured, not
+        // guessed: uncapped, a log row grows from 55px to 86px at 2x and 119px
+        // at 3x, and at 3x the sheet overflows by 18px. Ignoring the setting
+        // instead would mean somebody who needs larger text cannot read their
+        // own logs, so it is capped rather than dropped.
+        data: media.copyWith(textScaler: media.textScaler.clamp(maxScaleFactor: 1.3)),
+        child: SafeArea(
+          top: false,
+          child: Center(
+            child: ConstrainedBox(
+              // A phone-width column on a tablet. Full width at 1024px gives a
+              // line of log text nobody can scan.
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: OverlayNavigator(
+                push: push,
+                pop: pop,
+                child: Column(
+                  children: [
+                    const _Grip(),
+                    if (_stack.isEmpty) ...[
+                      _Header(onSelect: _select),
+                      _Tabs(active: _tab, onSelect: _select),
+                      Expanded(child: _body()),
+                    ] else
+                      Expanded(child: _stack.last),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -269,22 +286,29 @@ class _Tabs extends StatelessWidget {
             border: Border(bottom: BorderSide(color: CSxColors.border)),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Row(
-            children: [
-              for (final tab in const [OverlayTab.logs, OverlayTab.network, OverlayTab.errors])
-                _TabButton(
-                  label: switch (tab) {
-                    OverlayTab.logs => 'Logs',
-                    OverlayTab.network => 'Network',
-                    _ => 'Errors',
-                  },
-                  // A dot, not a number: the count is already one tap away, and
-                  // the floating button is where the number belongs.
-                  dot: tab == OverlayTab.errors && unseen > 0,
-                  active: tab == active,
-                  onTap: () => onSelect(tab),
-                ),
-            ],
+          // Scrollable rather than a plain Row: at a large system text scale
+          // three labels do not fit a 390px phone, and a Row just overflows.
+          // The tabs stay where they are at any ordinary size, because the row
+          // only scrolls when it has to.
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final tab in const [OverlayTab.logs, OverlayTab.network, OverlayTab.errors])
+                  _TabButton(
+                    label: switch (tab) {
+                      OverlayTab.logs => 'Logs',
+                      OverlayTab.network => 'Network',
+                      _ => 'Errors',
+                    },
+                    // A dot, not a number: the count is already one tap away,
+                    // and the floating button is where the number belongs.
+                    dot: tab == OverlayTab.errors && unseen > 0,
+                    active: tab == active,
+                    onTap: () => onSelect(tab),
+                  ),
+              ],
+            ),
           ),
         );
       },
