@@ -1,3 +1,4 @@
+import 'package:code_scout/src/csx_interface/data_tab.dart';
 import 'package:code_scout/src/csx_interface/errors_tab.dart';
 import 'package:code_scout/src/csx_interface/live_pane.dart';
 import 'package:code_scout/src/csx_interface/log_buffer.dart';
@@ -5,6 +6,7 @@ import 'package:code_scout/src/csx_interface/logs_tab.dart';
 import 'package:code_scout/src/csx_interface/network_tab.dart';
 import 'package:code_scout/src/csx_interface/overlay_theme.dart';
 import 'package:code_scout/src/csx_interface/overlay_widgets.dart';
+import 'package:code_scout/src/db/db_registry.dart';
 import 'package:code_scout/src/live/live_session_client.dart';
 import 'package:flutter/material.dart';
 
@@ -164,7 +166,7 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final nav = OverlayNavigator.of(context);
     // A control that leads to an empty room should not be in the room.
-    final hasDatabases = CodeScoutRegistryPeek.hasSources;
+    final hasDatabases = DatabaseRegistry.i.sources.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 6, 0),
@@ -178,7 +180,7 @@ class _Header extends StatelessWidget {
             CSxIconButton(
               icon: Icons.storage_outlined,
               tooltip: 'Data',
-              onPressed: () => nav.push(const _NotYet(title: 'Data')),
+              onPressed: () => nav.push(const DataSources()),
             ),
           CSxIconButton(
             icon: Icons.info_outline,
@@ -410,12 +412,4 @@ class _NotYet extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Whether anything is registered, without importing the registry into the
-/// header. Replaced by the real read when the Data screen lands.
-class CodeScoutRegistryPeek {
-  const CodeScoutRegistryPeek._();
-
-  static bool hasSources = false;
 }
