@@ -2,32 +2,70 @@
 
 [![pub.dev](https://img.shields.io/pub/v/code_scout_http.svg)](https://pub.dev/packages/code_scout_http)
 
-HTTP client wrapper for [Code Scout](https://codescout.tech). Automatically captures network requests, responses, and errors.
+Captures every HTTP call your app makes through `package:http` and shows it to you, either on the
+phone itself or on a [Code Scout](https://codescout.tech) dashboard you run.
 
-Part of the [Code Scout](https://pub.dev/packages/code_scout) ecosystem.
+This is the `package:http` half of Code Scout. The core package,
+[`code_scout`](https://pub.dev/packages/code_scout), does the logging and has no HTTP dependency
+of its own, which is why network capture lives out here.
 
-## Getting Started
+## Getting started
 
 ```bash
 flutter pub add code_scout_http
 ```
 
-This package depends on [`code_scout`](https://pub.dev/packages/code_scout) and [`http`](https://pub.dev/packages/http).
-
-## Usage
+Wrap the client you already have:
 
 ```dart
-import 'package:code_scout_http/code_scout_http.dart';
 import 'package:http/http.dart' as http;
+import 'package:code_scout_http/code_scout_http.dart';
 
-final client = CodeScoutHttpClient(client: http.Client());
+final client = CodeScoutHttpClient(client: myExistingClient);
 
-// Use it like a normal http.Client — it's a drop-in replacement
+// Use it exactly like an http.Client. It extends http.BaseClient,
+// so it goes anywhere one already goes.
 final response = await client.get(Uri.parse('https://api.example.com/data'));
 ```
 
-Every request, response, and error will be automatically captured, correlated by request ID, and synced to your Code Scout server.
+Pass your existing client in through `client:`. If you leave that argument out, the wrapper
+builds a plain new `http.Client` instead, and any base headers, proxy or timeout you had
+configured on yours are quietly lost.
+
+Code Scout itself still needs `init()` called somewhere, which is covered in the
+[core package's readme](https://pub.dev/packages/code_scout).
+
+## What you get
+
+Every call writes one log when the request goes out and a second when it comes back. The two
+share a request id, so the in-app panel and the dashboard show them as one row rather than two
+unrelated entries, with the status, the duration, and the headers and bodies on both sides.
+
+Unlike Dio, `package:http` does not treat a 4xx or 5xx as an error, so those arrive as ordinary
+responses and keep their status code. Only a genuine transport failure, such as a refused
+connection or a DNS problem, is recorded as an error.
+
+You can read all of this on the device with no server configured at all. Tap the floating button
+and open the Network tab.
+
+## Two things worth knowing
+
+The response body is read into memory so it can be recorded. An `http.StreamedResponse` is
+single subscription, meaning it can only be read once, so the wrapper reads the bytes and then
+hands your code a fresh stream containing the same bytes. Your code sees no difference, but a
+very large download is buffered rather than streamed straight through.
+
+Nothing is redacted unless you ask for it. Out of the box the `Authorization` header and every
+request body are recorded as sent, which is deliberate, since the token is sometimes the bug you
+are chasing. Before you point this at real users, set `RedactionBehavior.recommended()` in your
+Code Scout configuration.
+
+## Checking it is working
+
+If the Network tab stays empty, open the panel and tap the info icon. The wrapper announces
+itself to Code Scout the moment you construct it, so the Info screen can tell you whether it is
+genuinely missing or simply installed and has not seen a call yet.
 
 ## License
 
-MIT - see [LICENSE](LICENSE) for details.
+MIT. See [LICENSE](LICENSE).

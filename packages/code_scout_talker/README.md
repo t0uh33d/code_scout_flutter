@@ -33,9 +33,18 @@ This depends on [`code_scout`](https://pub.dev/packages/code_scout) and
 Pass the observer when you create your Talker:
 
 ```dart
+import 'package:talker/talker.dart';
 import 'package:code_scout_talker/code_scout_talker.dart';
 
-final talker = Talker(observer: const CodeScoutTalkerObserver());
+final talker = Talker(observer: CodeScoutTalkerObserver());
+```
+
+**One name clashes.** Talker and Code Scout both export a type called `LogLevel`, so if you
+configure them in the same file Dart refuses to guess which one you meant. Hide the one you are
+not using:
+
+```dart
+import 'package:talker/talker.dart' hide LogLevel;
 ```
 
 Then set Code Scout up as you normally would:
@@ -45,8 +54,8 @@ await CodeScout.instance.init(
   configuration: CodeScoutConfiguration(
     projectCredentials: ProjectCredentials(
       link: 'https://your-dashboard.example.com/',
-      projectId: '...',
-      secretKey: '...',
+      projectID: '...',
+      projectSecret: '...',
     ),
   ),
 );
@@ -61,7 +70,7 @@ If your app calls both Talker and Code Scout directly, you can tag everything
 that came through Talker so the two are easy to tell apart:
 
 ```dart
-Talker(observer: const CodeScoutTalkerObserver(tags: {'talker'}))
+Talker(observer: CodeScoutTalkerObserver(tags: {'talker'}))
 ```
 
 ## How things map
