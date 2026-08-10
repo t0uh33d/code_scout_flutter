@@ -214,15 +214,24 @@ class OverlayCall {
     return s.isEmpty ? '/' : s;
   }
 
+  /// The status code, from whichever phase carried one.
+  ///
+  /// The error phase has to be checked too: dio rejects 4xx and 5xx, so for a
+  /// dio app the only place a 401's code exists is the error phase. Reading the
+  /// response phase alone left every failed dio call showing no code at all.
   int? get statusCode {
-    final code = phase(NetworkCallPhase.response)?.metadata?['status_code'];
-    return code is int ? code : null;
+    final fromResponse = phase(NetworkCallPhase.response)?.metadata?['status_code'];
+    if (fromResponse is int) return fromResponse;
+    final fromError = phase(NetworkCallPhase.error)?.metadata?['status_code'];
+    return fromError is int ? fromError : null;
   }
 
   /// The same four states the dashboard distinguishes.
   String get status {
-    if (hasError) return 'error';
+    // A code first, even on a failure: "401" says more than "error", and the
+    // row is already coloured by [failed].
     if (statusCode != null) return '$statusCode';
+    if (hasError) return 'error';
     if (hasResponse) return 'done';
     return 'pending';
   }

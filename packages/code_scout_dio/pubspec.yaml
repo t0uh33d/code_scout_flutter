@@ -11,7 +11,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  code_scout: ^1.0.0
+  code_scout: ^1.5.0
   dio: '>=5.0.0 <7.0.0'
 
 dev_dependencies:

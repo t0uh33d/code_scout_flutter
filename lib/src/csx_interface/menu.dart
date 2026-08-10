@@ -1,5 +1,6 @@
 import 'package:code_scout/src/csx_interface/data_tab.dart';
 import 'package:code_scout/src/csx_interface/errors_tab.dart';
+import 'package:code_scout/src/csx_interface/info_tab.dart';
 import 'package:code_scout/src/csx_interface/live_pane.dart';
 import 'package:code_scout/src/csx_interface/log_buffer.dart';
 import 'package:code_scout/src/csx_interface/logs_tab.dart';
@@ -56,10 +57,9 @@ class _CSxInterfaceState extends State<CSxInterface> {
       case OverlayTab.live:
         push(const LivePane());
       case OverlayTab.data:
+        push(const DataSources());
       case OverlayTab.info:
-        // Both land in the next slice. Opening the sheet on Logs is a better
-        // answer than a screen that is not there yet.
-        break;
+        push(const InfoScreen());
       default:
         break;
     }
@@ -185,7 +185,7 @@ class _Header extends StatelessWidget {
           CSxIconButton(
             icon: Icons.info_outline,
             tooltip: 'Info',
-            onPressed: () => nav.push(const _NotYet(title: 'Info')),
+            onPressed: () => nav.push(const InfoScreen()),
           ),
           CSxIconButton(
             icon: Icons.close,
@@ -390,26 +390,3 @@ class PushedHeader extends StatelessWidget {
   }
 }
 
-/// Stands in for a screen that lands in a later slice, so the control that
-/// leads here is honest about it rather than doing nothing.
-class _NotYet extends StatelessWidget {
-  const _NotYet({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        PushedHeader(title: title),
-        Expanded(
-          child: CSxEmpty(
-            title: '$title is next',
-            detail: 'This screen is being built. Everything else in the overlay works.',
-            mark: true,
-          ),
-        ),
-      ],
-    );
-  }
-}

@@ -19,6 +19,27 @@ class NetworkManager {
 
   static const Duration _requestTtl = Duration(minutes: 2);
 
+  final Set<String> _integrations = {};
+
+  /// Which companion packages are loaded in this app.
+  ///
+  /// Network calls are captured by a companion package, never by the core, so
+  /// an app that forgot to add the interceptor produces an empty Network tab
+  /// that looks exactly like an app making no calls. There is no way to detect
+  /// a package that was never constructed, so each one says so when it is
+  /// built. Without this, the most common setup mistake has no symptom anyone
+  /// can search for.
+  Set<String> get integrations => Set.unmodifiable(_integrations);
+
+  /// Called by a companion package when it is constructed. Not meant to be
+  /// called by an app.
+  void registerIntegration(String name) => _integrations.add(name);
+
+  /// The manager is a singleton, so one test registering an integration would
+  /// otherwise leak into every test that runs after it.
+  @visibleForTesting
+  void resetIntegrations() => _integrations.clear();
+
   /// Where "now" comes from, so a test can move time without waiting two
   /// minutes for it.
   @visibleForTesting

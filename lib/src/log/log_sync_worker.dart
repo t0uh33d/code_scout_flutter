@@ -86,6 +86,15 @@ class LogSyncWorker {
   /// until the server has taken it.
   Future<void> flush() => _sync();
 
+  /// Ends the pause now, for a person who asked.
+  ///
+  /// [flush] alone returns immediately while a backoff is running, so a button
+  /// wired only to it would be a guaranteed no-op on the one screen that exists
+  /// to explain the pause. Safe because it takes a deliberate tap: the backoff
+  /// is there to stop an automatic loop hammering a server that is down, not to
+  /// overrule somebody who has just fixed it.
+  void clearBackoff() => _backoffUntil = null;
+
   /// How long the worker is currently holding off, or null when it is not.
   Duration? get backoffRemaining {
     final until = _backoffUntil;

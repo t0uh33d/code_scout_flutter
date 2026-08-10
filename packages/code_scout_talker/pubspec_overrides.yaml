@@ -1,0 +1,11 @@
+# Resolves the core from this repo rather than pub.dev, so a companion package
+# can use a core API in the same commit that adds it. Without this, every core
+# change would have to be published before the package that needs it would even
+# analyse.
+#
+# Local only: pub does not publish this file and a consumer never sees it. The
+# hosted constraint in pubspec.yaml is what they get, and it has to be raised to
+# the release that carries the API before these packages are published.
+dependency_overrides:
+  code_scout:
+    path: ../../

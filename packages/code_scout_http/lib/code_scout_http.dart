@@ -16,8 +16,11 @@ export 'package:code_scout/code_scout.dart' show NetworkManager;
 class CodeScoutHttpClient extends http.BaseClient {
   final http.Client _innerClient;
 
-  CodeScoutHttpClient({http.Client? client})
-      : _innerClient = client ?? http.Client();
+  /// Says it is here as soon as it is built, so an app that never wrapped its
+  /// client is told that rather than shown an empty Network tab.
+  CodeScoutHttpClient({http.Client? client}) : _innerClient = client ?? http.Client() {
+    NetworkManager.i.registerIntegration('http');
+  }
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -94,6 +97,9 @@ class CodeScoutHttpClient extends http.BaseClient {
         statusCode: response.statusCode,
         headers: response.headers,
         body: utf8.decode(bytes, allowMalformed: true),
+        // Measured here, where the whole response is in hand. Anywhere later is
+        // after redaction and truncation have rewritten it.
+        byteLength: bytes.length,
       ),
       reqID,
     );

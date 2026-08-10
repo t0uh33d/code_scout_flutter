@@ -49,6 +49,14 @@ class CodeScout {
 
   CodeScoutConfiguration get configuration => _configuration;
 
+  /// Sets the configuration without running [init].
+  ///
+  /// A widget test for a screen that only reads the configuration should not
+  /// have to open SQLite, draw a floating button and start a sync timer to get
+  /// one, and `init` leaves a pending timer behind that fails the test anyway.
+  @visibleForTesting
+  set configuration(CodeScoutConfiguration value) => _configuration = value;
+
   bool _isInitialized = false;
 
   bool get isInitialized => _isInitialized;

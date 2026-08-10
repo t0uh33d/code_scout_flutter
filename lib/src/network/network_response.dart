@@ -6,10 +6,20 @@ class NetworkResponseData extends NetworkData {
   final dynamic body;
   final DateTime? timestamp;
 
+  /// The response's size on the wire, when the caller knew it.
+  ///
+  /// Has to be taken **before** redaction and truncation, which is why it is a
+  /// field rather than something measured here: by the time a body reaches
+  /// [toMap] the redactor has replaced values with a ten-character marker and
+  /// cut anything over 32 KB, so `body.length` would report the size of the
+  /// summary rather than of the response.
+  final int? byteLength;
+
   NetworkResponseData({
     required this.statusCode,
     this.headers,
     this.body,
+    this.byteLength,
     this.timestamp,
   });
 
@@ -18,6 +28,7 @@ class NetworkResponseData extends NetworkData {
       statusCode: map['status_code'],
       headers: map['headers'],
       body: map['body'],
+      byteLength: map['byte_length'],
       timestamp: DateTime.parse(map['timestamp']),
     );
   }
@@ -28,6 +39,7 @@ class NetworkResponseData extends NetworkData {
       'status_code': statusCode,
       'headers': Redactor.headers(headers),
       'body': Redactor.body(body),
+      if (byteLength != null) 'byte_length': byteLength,
       'timestamp': timestamp?.toIso8601String(),
       'request': _request?.toMap(),
     };

@@ -11,7 +11,15 @@ export 'package:code_scout/code_scout.dart' show NetworkManager;
 /// dio.interceptors.add(CodeScoutDioInterceptor());
 /// ```
 class CodeScoutDioInterceptor extends Interceptor {
-  CodeScoutDioInterceptor();
+  /// Says it is here as soon as it is built, before any call has been made.
+  ///
+  /// The core cannot detect a package that was never constructed, so an app
+  /// that forgot the interceptor shows an empty Network tab that looks exactly
+  /// like an app making no calls. Registering at construction is what lets the
+  /// overlay tell those two apart.
+  CodeScoutDioInterceptor() {
+    NetworkManager.i.registerIntegration('dio');
+  }
 
   // Capture must never fail the request it observes: every hook does its
   // Code Scout work inside a try/catch and always forwards via handler.next.
@@ -62,6 +70,10 @@ class CodeScoutDioInterceptor extends Interceptor {
             type: err.type.name,
             message: err.message ?? '',
             response: err.response?.data,
+            // dio's default validateStatus rejects 4xx and 5xx, so those land
+            // here rather than in onResponse. Dropping the code left a dio app
+            // unable to tell a 401 from a 504 anywhere.
+            statusCode: err.response?.statusCode,
             stackTrace: err.stackTrace,
           ),
           reqID,
