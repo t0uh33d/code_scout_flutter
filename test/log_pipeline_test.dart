@@ -2,9 +2,10 @@ import 'dart:async';
 
 import 'package:code_scout/code_scout.dart';
 import 'package:code_scout/src/csx_interface/log_buffer.dart';
+import 'package:code_scout/src/live/live_session_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Two settings that were declared and then not honoured.
+/// Three settings that were declared and then not honoured by anything.
 void main() {
   setUp(LogBuffer.i.clear);
   tearDown(() {
@@ -108,6 +109,41 @@ void main() {
       );
 
       expect(() => CodeScout.instance.i('no database here'), returnsNormally);
+    });
+  });
+
+  // Third setting of the same kind: declared, defaulted, and read by nothing.
+  // An app that turns live streaming off is saying it never wants to be
+  // watched, and that has to hold for a caller who reaches past the panel.
+  group('enableLiveStreaming', () {
+    // Asserting only that it returns false proves nothing, because a failed
+    // connection returns false too. That version passed with the guard
+    // deleted. What separates the two is whether the client is asked to
+    // connect at all, so this counts the state changes instead.
+    test('false refuses without even trying to connect', () async {
+      CodeScout.instance.configuration = CodeScoutConfiguration(
+        // Credentials present, so the flag is the only thing in the way.
+        projectCredentials: ProjectCredentials(
+          link: 'http://localhost:1/',
+          projectID: 'p',
+          projectSecret: 's',
+        ),
+        realTime: RealTimeConfig(enableLiveStreaming: false),
+      );
+
+      var notifications = 0;
+      void count() => notifications++;
+      LiveSessionClient.i.addListener(count);
+      addTearDown(() => LiveSessionClient.i.removeListener(count));
+
+      expect(await CodeScout.instance.startLiveSession('4K7Q2P'), isFalse);
+      expect(LiveSessionClient.i.state, LiveSessionState.idle);
+      expect(notifications, 0, reason: 'it never moved to connecting');
+    });
+
+    test('the default leaves it available', () {
+      CodeScout.instance.configuration = CodeScoutConfiguration();
+      expect(CodeScout.instance.configuration.realTime.enableLiveStreaming, isTrue);
     });
   });
 }

@@ -1,3 +1,4 @@
+import 'package:code_scout/src/code_scout.dart';
 import 'package:code_scout/src/csx_interface/data_tab.dart';
 import 'package:code_scout/src/csx_interface/errors_tab.dart';
 import 'package:code_scout/src/csx_interface/info_tab.dart';
@@ -191,7 +192,10 @@ class _Header extends StatelessWidget {
         children: [
           Image.asset('assets/pim.png', package: 'code_scout', height: 24, width: 24),
           const SizedBox(width: 8),
-          const _LivePill(),
+          // An app that turned live streaming off does not get a control that
+          // leads to a refusal.
+          if (CodeScout.instance.configuration.realTime.enableLiveStreaming)
+            const _LivePill(),
           const Spacer(),
           if (hasDatabases)
             CSxIconButton(

@@ -169,6 +169,15 @@ class CodeScout {
   /// console, the overlay and SQLite whether or not anyone is watching, and a
   /// live session that drops takes nothing with it.
   Future<bool> startLiveSession(String code) {
+    // Honoured, rather than declared and ignored. An app that sets this to
+    // false is saying it never wants to be watched, and that has to be true of
+    // the code path as well as of the panel: refusing here covers a caller who
+    // reaches past the UI, which is the only way the flag is worth anything.
+    if (!_configuration.realTime.enableLiveStreaming) {
+      dev.log('CodeScout: live streaming is disabled by RealTimeConfig.');
+      return Future.value(false);
+    }
+
     return LiveSessionClient.i.start(
       code: code,
       configuration: _configuration,
