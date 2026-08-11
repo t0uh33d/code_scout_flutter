@@ -18,20 +18,20 @@
 
 ### Changed
 
-- **The package description now leads with the dashboard.** It opened with the on-device viewer, which is the part every other logging package in this space also does, and left the self-hosted dashboard as a closing aside — in a pub.dev search result that one line is the whole pitch. It also read "an on-device viewer that need no server". No code changed.
+- **The package description now leads with the dashboard.** It opened with the on-device viewer, which is the part every other logging package in this space also does, and left the self-hosted dashboard as a closing aside. In a pub.dev search result that one line is the whole pitch. It also read "an on-device viewer that need no server". No code changed.
 
 ## 1.3.0
 
 ### Fixed
 
-- **A server that does not answer at startup no longer stops the app uploading for the whole launch.** The sync worker was started only if `GET /api/validate` succeeded in the moment `init()` ran, and a failed validation was cached for the life of the process — so an app that started a second before its server did collected logs to disk and never sent them until it was restarted. Validation still runs, because its answer carries the project's sampling rate, but it no longer decides whether uploading happens. A failing upload is the sync cycle's problem, and it already knows how to wait and try again.
+- **A server that does not answer at startup no longer stops the app uploading for the whole launch.** The sync worker was started only if `GET /api/validate` succeeded in the moment `init()` ran, and a failed validation was cached for the life of the process, so an app that started a second before its server did collected logs to disk and never sent them until it was restarted. Validation still runs, because its answer carries the project's sampling rate, but it no longer decides whether uploading happens. A failing upload is the sync cycle's problem, and it already knows how to wait and try again.
 - **Repeated upload failures now pause rather than stop.** Five failures in a row used to stop the worker for the rest of the launch, so a server down for a minute cost every log until the app was restarted, silently. It now goes quiet for five minutes and picks up on its own when the server comes back.
-- **A database that will not open no longer reports an unhandled async error.** Every caller inside the SDK already handled this: the session is skipped, the log is dropped, the app carries on. A second copy of the error was also being delivered to a future nobody awaited, which Dart reports as an unhandled error — so a problem the SDK absorbed still surfaced as a crash report with Code Scout's name on it.
+- **A database that will not open no longer reports an unhandled async error.** Every caller inside the SDK already handled this: the session is skipped, the log is dropped, the app carries on. A second copy of the error was also being delivered to a future nobody awaited, which Dart reports as an unhandled error, so a problem the SDK absorbed still surfaced as a crash report with Code Scout's name on it.
 - **`init()` no longer throws when there is no widget tree yet.** `freshContextFetcher` is optional, so calling `init()` early in `main()` before `runApp` is a reasonable thing to do, and it is where you want logging to start. The overlay tried to insert itself anyway, one turn of the event loop later, and threw where nothing could catch it. It now waits for a context instead. Nothing else in the SDK was affected.
 
 ### Changed
 
-- **The overlay's Session tab now says what is actually happening.** It showed one number labelled "Logs held", which was the size of the in-memory buffer the Logs tab draws from — a display ring that never drains, so a launch whose logs had all uploaded still read as a queue going nowhere. It now shows **In this view** (the buffer) and **Waiting to upload** (the real count on disk) separately, and the Sync line reports whether the uploader is running, paused, or has no server configured, instead of only whether credentials were set.
+- **The overlay's Session tab now says what is actually happening.** It showed one number labelled "Logs held", which was the size of the in-memory buffer the Logs tab draws from, a display ring that never drains, so a launch whose logs had all uploaded still read as a queue going nowhere. It now shows **In this view** (the buffer) and **Waiting to upload** (the real count on disk) separately, and the Sync line reports whether the uploader is running, paused, or has no server configured, instead of only whether credentials were set.
 
 ### Added
 
@@ -50,7 +50,7 @@ you ship it:
 
 - **Your app starts collecting more about the device.** `captureDeviceInfo` and
   `captureAppContext` have always defaulted to `true` and always been ignored.
-  They now work — so device model, OS name and version, your app's version and
+  They now work, so device model, OS name and version, your app's version and
   build number begin reaching your server, along with a random installation id
   that is stable for the life of the install. Set either to `false` to opt out.
   No identity is collected either way; that stays opt-in through `setUser()`.
@@ -62,7 +62,7 @@ you ship it:
 - **New: live sessions.** Open the overlay, tap **Live**, and type the six
   character code the dashboard shows under Live devices. From then on every log
   this launch produces arrives on the dashboard as it happens. Tap **Stop
-  streaming**, close the app, or lose the network and the session ends — none
+  streaming**, close the app, or lose the network and the session ends. None
   of it is stored on the server unless somebody turns on Persist.
 - Streaming is additional, never a replacement. Logs keep going to the console,
   the overlay and SQLite whether or not anyone is watching, and a live session
@@ -104,7 +104,7 @@ you ship it:
 
 - **New: redaction, opt-in.** Name headers or body keys in `RedactionBehavior`
   and they are replaced at capture, before anything reaches SQLite or an upload.
-  Nothing is redacted unless you ask — this is a debugging tool, and a token is
+  Nothing is redacted unless you ask. This is a debugging tool, and a token is
   sometimes the reason a request is failing. Body keys match at any depth
   including inside lists, ignoring case and separators, so one `access_token`
   entry covers `accessToken` too. `RedactionBehavior.commonHeaders` and
@@ -133,7 +133,7 @@ you ship it:
   installation id that is stable for the life of the install. The dashboard uses
   these for its Sessions and Devices screens.
 - **New:** `CodeScout.instance.setUser(id, traits: {...})` names the person using
-  the app. Identity is opt-in and never inferred — a session is anonymous until
+  the app. Identity is opt-in and never inferred. A session is anonymous until
   you call it. Pass `null` on sign out. Safe to call at any point in a launch.
 - **Behaviour change:** `captureDeviceInfo` and `captureAppContext` now do
   something. Both have always defaulted to `true` and been ignored; they now
@@ -145,7 +145,7 @@ you ship it:
 ## 1.1.1
 
 - **Fix:** logging or network capture before `CodeScout.instance.init()` no longer
-  throws `LateInitializationError` into the caller — configuration and session id
+  throws `LateInitializationError` into the caller. Configuration and session id
   now have safe defaults, and `NetworkManager` capture is a no-op until init.
 - **Fix:** network error logs now carry the `network` tag, matching the request and
   response phases. Previously `enabledTags: {'network'}` silently dropped them.
@@ -171,4 +171,4 @@ you ship it:
 * Atomic sync pipeline with retry and automatic backoff
 * Floating overlay button for development controls
 * Socket connection scaffolding for real-time streaming
-* Zero third-party HTTP dependencies — all server communication via dart:io
+* Zero third-party HTTP dependencies. All server communication via dart:io
