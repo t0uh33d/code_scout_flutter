@@ -8,7 +8,13 @@ This file provides guidance to AI coding agents when working with the `code_scou
 
 **Package name:** `code_scout`
 **Version:** 1.4.0 (published)
-**Dart SDK:** ^3.11.0 | **Flutter:** >=3.0.0
+**Dart SDK:** ^3.11.0 | **Flutter:** >=3.41.0
+
+The Flutter constraint is derived, not chosen: Dart 3.11.0 first shipped in Flutter 3.41.0, so
+anything older cannot resolve `sdk: ^3.11.0`. It said `>=3.0.0` until 2026-08-12, which let pub.dev
+advertise compatibility with toolchains that fail at resolution with no useful message. **Raise it
+whenever the Dart constraint moves**, and check which Flutter release carried that Dart rather than
+guessing.
 **Published:** [pub.dev/packages/code_scout](https://pub.dev/packages/code_scout)
 
 ### Companion Packages
