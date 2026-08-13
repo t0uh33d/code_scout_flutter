@@ -1,3 +1,13 @@
+## Unreleased
+
+### Changed
+
+- **The declared minimum is now Flutter 3.38 (Dart 3.10), where it used to say Flutter 3.0.**
+  That old number was never true. The package requires Dart 3.10 through its dependencies, and
+  Dart 3.10 first shipped in Flutter 3.38, so every release before that resolved with an error
+  rather than a message explaining why. Nothing about the code changed and nothing you have
+  working will stop working; pub.dev now just describes the requirement honestly.
+
 ## 1.5.0
 
 ### Fixed

@@ -8,13 +8,25 @@ This file provides guidance to AI coding agents when working with the `code_scou
 
 **Package name:** `code_scout`
 **Version:** 1.4.0 (published)
-**Dart SDK:** ^3.11.0 | **Flutter:** >=3.41.0
+**Dart SDK:** ^3.10.0 | **Flutter:** >=3.38.0
 
-The Flutter constraint is derived, not chosen: Dart 3.11.0 first shipped in Flutter 3.41.0, so
-anything older cannot resolve `sdk: ^3.11.0`. It said `>=3.0.0` until 2026-08-12, which let pub.dev
-advertise compatibility with toolchains that fail at resolution with no useful message. **Raise it
-whenever the Dart constraint moves**, and check which Flutter release carried that Dart rather than
-guessing.
+**Both numbers are derived, not chosen, and neither is arbitrary.** The Flutter one follows the
+Dart one: Dart 3.10.0 first shipped in Flutter 3.38.0, so anything older cannot resolve
+`sdk: ^3.10.0`. It said `>=3.0.0` until 2026-08-12, which had pub.dev advertising compatibility
+with three years of releases that fail at resolution with no useful message.
+
+The Dart floor is set by the plus plugins, not by our own code. `device_info_plus`,
+`package_info_plus` and `path_provider` all require Dart >= 3.10. Our source only needs **3.8**,
+and exactly three things stand between it and lower: null-aware elements (`?x` inside a collection
+literal) in `errors_tab.dart` and `overlay_widgets.dart`, which need 3.8, and a `_` reused twice in
+one scope in `overlay_widgets.dart`, which needs 3.7. All three are conveniences and could be
+rewritten in minutes if the floor ever needs to drop further.
+
+**To check this rather than guess:** lower `sdk:` in `pubspec.yaml` and run `flutter analyze`. The
+analyzer enforces the declared language version and names the feature and the version it wants.
+What that does *not* prove is dependency resolution, because pub resolves against the SDK you have
+installed, not the one you declared. Going below 3.10 therefore needs a real old toolchain to see
+which plugin versions actually get picked.
 **Published:** [pub.dev/packages/code_scout](https://pub.dev/packages/code_scout)
 
 ### Companion Packages

@@ -27,7 +27,9 @@ observer is the one the example app does not use; its own package tests are what
 
 ## Getting set up
 
-You need Dart 3.11 or newer; every pubspec here sets `sdk: ^3.11.0`.
+You need Dart 3.10 or newer, which means Flutter 3.38 or newer; every pubspec here sets
+`sdk: ^3.10.0` and `flutter: '>=3.38.0'`. The floor comes from the plus plugins rather than from
+our own code, which still analyses clean at Dart 3.8.
 
 Resolve every package before anything else. The root `flutter pub get` covers the SDK itself and
 nothing more, and each of the other four has a pubspec that pub will not resolve on your behalf:
