@@ -35,6 +35,13 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
+          # Pinned, not `channel: stable`. Flutter 3.47 (Dart 3.13) landed on
+          # 2026-08-12 and made `pub publish` warn when git status is not
+          # clean, and `--dry-run` exits 65 on a warning, so all four package
+          # jobs went red on a commit that touched three markdown files. A
+          # toolchain release should not be able to fail a build nobody
+          # changed. Same reasoning as pinning templ in the server repo.
+          flutter-version: 3.44.9
           channel: stable
           cache: true
 
@@ -76,6 +83,13 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
+          # Pinned, not `channel: stable`. Flutter 3.47 (Dart 3.13) landed on
+          # 2026-08-12 and made `pub publish` warn when git status is not
+          # clean, and `--dry-run` exits 65 on a warning, so all four package
+          # jobs went red on a commit that touched three markdown files. A
+          # toolchain release should not be able to fail a build nobody
+          # changed. Same reasoning as pinning templ in the server repo.
+          flutter-version: 3.44.9
           channel: stable
           cache: true
 
@@ -130,6 +144,13 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
+          # Pinned, not `channel: stable`. Flutter 3.47 (Dart 3.13) landed on
+          # 2026-08-12 and made `pub publish` warn when git status is not
+          # clean, and `--dry-run` exits 65 on a warning, so all four package
+          # jobs went red on a commit that touched three markdown files. A
+          # toolchain release should not be able to fail a build nobody
+          # changed. Same reasoning as pinning templ in the server repo.
+          flutter-version: 3.44.9
           channel: stable
           cache: true
 
