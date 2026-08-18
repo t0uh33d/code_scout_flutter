@@ -3,9 +3,9 @@
 [![pub.dev](https://img.shields.io/pub/v/code_scout_talker.svg)](https://pub.dev/packages/code_scout_talker)
 
 Sends everything [Talker](https://pub.dev/packages/talker) logs to your
-[Code Scout](https://codescout.tech) dashboard as well.
+[CodeScout](https://codescout.tech) dashboard as well.
 
-Part of the [Code Scout](https://pub.dev/packages/code_scout) ecosystem.
+Part of the [CodeScout](https://pub.dev/packages/code_scout) ecosystem.
 
 ## Why
 
@@ -39,7 +39,7 @@ import 'package:code_scout_talker/code_scout_talker.dart';
 final talker = Talker(observer: CodeScoutTalkerObserver());
 ```
 
-**One name clashes.** Talker and Code Scout both export a type called `LogLevel`, so if you
+**One name clashes.** Talker and CodeScout both export a type called `LogLevel`, so if you
 configure them in the same file Dart refuses to guess which one you meant. Hide the one you are
 not using:
 
@@ -47,7 +47,7 @@ not using:
 import 'package:talker/talker.dart' hide LogLevel;
 ```
 
-Then set Code Scout up as you normally would:
+Then set CodeScout up as you normally would:
 
 ```dart
 await CodeScout.instance.init(
@@ -66,7 +66,7 @@ That is the whole setup. Everything through `talker.info()`, `talker.error()`,
 
 ### Tagging forwarded logs
 
-If your app calls both Talker and Code Scout directly, you can tag everything
+If your app calls both Talker and CodeScout directly, you can tag everything
 that came through Talker so the two are easy to tell apart:
 
 ```dart
@@ -75,7 +75,7 @@ Talker(observer: CodeScoutTalkerObserver(tags: {'talker'}))
 
 ## How things map
 
-| Talker | Code Scout |
+| Talker | CodeScout |
 |--------|-----------|
 | `critical` | `fatal` |
 | `error` | `error` |
@@ -94,9 +94,9 @@ display text rather than an identifier, so it goes into the log's metadata as
 An error logged with no message uses the error itself as the message, because
 `talker.handle(e)` is a normal thing to write and a blank row helps nobody.
 
-## Before Code Scout is set up
+## Before CodeScout is set up
 
-Nothing breaks. Every callback does its work inside a try/catch, so a Code Scout
+Nothing breaks. Every callback does its work inside a try/catch, so a CodeScout
 that is not yet initialised, has no credentials, or fails for any other reason
 cannot interfere with your own `talker.info()` call. A logging tool that can
 throw is a logging tool that takes down the code it was meant to watch.

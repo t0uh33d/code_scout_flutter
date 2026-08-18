@@ -259,7 +259,7 @@ class CodeScoutWriteResult {
       };
 }
 
-/// Something Code Scout can browse on the device.
+/// Something CodeScout can browse on the device.
 ///
 /// Implement this to expose a store the built-in adapters do not cover. Nothing
 /// is browsable until an app registers it, so this is only ever reached for a

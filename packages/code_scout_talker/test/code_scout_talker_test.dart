@@ -10,7 +10,7 @@ void main() {
       observer.map(TalkerData('m', logLevel: from), fallback: fallback).level;
 
   group('levels', () {
-    test('every Talker level reaches the Code Scout level of the same name', () {
+    test('every Talker level reaches the CodeScout level of the same name', () {
       expect(levelOf(LogLevel.error), cs.LogLevel.error);
       expect(levelOf(LogLevel.warning), cs.LogLevel.warning);
       expect(levelOf(LogLevel.info), cs.LogLevel.info);
@@ -20,7 +20,7 @@ void main() {
 
     test('critical becomes fatal, because neither side has the other word', () {
       // The one mapping that is not a rename. Talker's worst level is
-      // critical and Code Scout's is fatal, so an app's most serious log has
+      // critical and CodeScout's is fatal, so an app's most serious log has
       // to land on the dashboard's most serious level or it reads as ordinary.
       expect(levelOf(LogLevel.critical), cs.LogLevel.fatal);
     });

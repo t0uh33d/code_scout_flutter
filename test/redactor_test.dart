@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:code_scout/code_scout.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Redaction is opt-in. Code Scout is a debugging tool, and the token is
+/// Redaction is opt-in. CodeScout is a debugging tool, and the token is
 /// sometimes exactly the reason a request is failing — so nothing is hidden
 /// unless the app asks for it.
 void main() {
@@ -171,7 +171,7 @@ void main() {
       expect(out, isA<String>());
       final text = out as String;
       expect(utf8.encode(text).length, lessThan(400));
-      expect(text, contains('truncated by Code Scout'));
+      expect(text, contains('truncated by CodeScout'));
       // The note reports the size of the whole body, not the amount removed.
       // Somebody staring at it wants to know what they are missing.
       expect(text, contains('The whole body was'));
@@ -200,7 +200,7 @@ void main() {
       const cfg = RedactionBehavior(maxBodyBytes: 101);
       final out = Redactor.body('日' * 200, cfg) as String;
       expect(() => utf8.encode(out), returnsNormally);
-      expect(out, contains('truncated by Code Scout'));
+      expect(out, contains('truncated by CodeScout'));
     });
 
     test('redaction runs before the cap', () {

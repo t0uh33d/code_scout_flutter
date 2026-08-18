@@ -2,7 +2,7 @@ part of 'config.dart';
 
 /// What to strip before anything is recorded.
 ///
-/// Opt-in: out of the box Code Scout records what your app sends, unchanged.
+/// Opt-in: out of the box CodeScout records what your app sends, unchanged.
 /// You decide what is sensitive, because you are the one who knows — and
 /// because a debugging tool that hides the header you are debugging is not
 /// much of a debugging tool.

@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 export 'package:code_scout/code_scout.dart' show NetworkManager;
 
 /// A Dio [Interceptor] that automatically captures network requests, responses,
-/// and errors for Code Scout.
+/// and errors for CodeScout.
 ///
 /// ```dart
 /// final dio = Dio();
@@ -22,7 +22,7 @@ class CodeScoutDioInterceptor extends Interceptor {
   }
 
   // Capture must never fail the request it observes: every hook does its
-  // Code Scout work inside a try/catch and always forwards via handler.next.
+  // CodeScout work inside a try/catch and always forwards via handler.next.
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {

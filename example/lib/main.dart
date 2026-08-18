@@ -18,7 +18,7 @@ import 'network_screen.dart';
 ///
 /// With none of them set the SDK stays on the device: the console printer and
 /// the floating overlay still work, and nothing is uploaded. That is a real way
-/// to use Code Scout rather than a degraded one, which is why it is the default
+/// to use CodeScout rather than a degraded one, which is why it is the default
 /// here.
 const csURL = String.fromEnvironment('CS_URL');
 const csProjectID = String.fromEnvironment('CS_PROJECT_ID');
@@ -44,7 +44,7 @@ class ExampleApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Code Scout',
+      title: 'CodeScout',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF078DEE)),
@@ -105,7 +105,7 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Code Scout'),
+        title: const Text('CodeScout'),
         bottom: const _StatusBar(),
       ),
       body: IndexedStack(

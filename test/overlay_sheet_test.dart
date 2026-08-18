@@ -5,7 +5,7 @@ import 'package:code_scout/src/csx_interface/overlay_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// The overlay is the only part of Code Scout someone uses without a server,
+/// The overlay is the only part of CodeScout someone uses without a server,
 /// so its filters have to work on their own.
 ///
 /// The Session tab's two tests moved out with the tab. What they covered —

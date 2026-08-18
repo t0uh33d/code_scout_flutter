@@ -1,4 +1,4 @@
-# Code Scout example
+# CodeScout example
 
 A small app that exercises the SDK: the six log levels you call by hand, tags
 and metadata, errors with real stack traces, redaction, identity, and network
@@ -15,7 +15,7 @@ flutter run
 
 No configuration, and nothing is uploaded. Logs go to the console, to the app's
 own SQLite database on the device, and to the floating button, which opens the
-on-device viewer. This is a real way to use Code Scout, not a limited trial of
+on-device viewer. This is a real way to use CodeScout, not a limited trial of
 it.
 
 The viewer has three tabs. Logs is everything the app has written, with a
@@ -60,7 +60,7 @@ The bar under the app title tells you which mode you are in. If you filled in
 `local.json` and nothing arrives, open the overlay's Info screen, the second
 icon in the sheet header, and press **Test connection**. It runs four checks in
 order and stops at the one that failed, so it tells you whether credentials are
-configured, whether anything answered, whether what answered was a Code Scout,
+configured, whether anything answered, whether what answered was a CodeScout,
 and whether it accepted the secret. It also names the project it reached, which
 catches "connected to the wrong project" too.
 
@@ -133,7 +133,7 @@ into memory when it built the view and has no idea the file changed underneath
 it. Every app behaves this way, which is why the dashboard says so after a
 write. Watching it once explains it better than the warning does.
 
-## Testing an app that uses Code Scout
+## Testing an app that uses CodeScout
 
 `test/widget_test.dart` boots the whole example under `flutter_test`. Run it
 with `flutter test` from this directory; the same command at the repo root runs

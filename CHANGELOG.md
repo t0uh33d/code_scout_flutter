@@ -36,7 +36,7 @@
 
 - **A server that does not answer at startup no longer stops the app uploading for the whole launch.** The sync worker was started only if `GET /api/validate` succeeded in the moment `init()` ran, and a failed validation was cached for the life of the process, so an app that started a second before its server did collected logs to disk and never sent them until it was restarted. Validation still runs, because its answer carries the project's sampling rate, but it no longer decides whether uploading happens. A failing upload is the sync cycle's problem, and it already knows how to wait and try again.
 - **Repeated upload failures now pause rather than stop.** Five failures in a row used to stop the worker for the rest of the launch, so a server down for a minute cost every log until the app was restarted, silently. It now goes quiet for five minutes and picks up on its own when the server comes back.
-- **A database that will not open no longer reports an unhandled async error.** Every caller inside the SDK already handled this: the session is skipped, the log is dropped, the app carries on. A second copy of the error was also being delivered to a future nobody awaited, which Dart reports as an unhandled error, so a problem the SDK absorbed still surfaced as a crash report with Code Scout's name on it.
+- **A database that will not open no longer reports an unhandled async error.** Every caller inside the SDK already handled this: the session is skipped, the log is dropped, the app carries on. A second copy of the error was also being delivered to a future nobody awaited, which Dart reports as an unhandled error, so a problem the SDK absorbed still surfaced as a crash report with CodeScout's name on it.
 - **`init()` no longer throws when there is no widget tree yet.** `freshContextFetcher` is optional, so calling `init()` early in `main()` before `runApp` is a reasonable thing to do, and it is where you want logging to start. The overlay tried to insert itself anyway, one turn of the event loop later, and threw where nothing could catch it. It now waits for a context instead. Nothing else in the SDK was affected.
 
 ### Changed
@@ -49,7 +49,7 @@
 
 ## 1.2.0
 
-The release that makes Code Scout usable in production: sessions, identity,
+The release that makes CodeScout usable in production: sessions, identity,
 redaction, sampling, server backoff, and watching a device live while somebody
 reproduces a bug in front of you.
 
@@ -175,7 +175,7 @@ you ship it:
 * Structured logging with 8 levels (all, system, verbose, debug, info, warning, error, fatal)
 * Tag-based and level-based log filtering
 * SQLite local persistence with WAL mode
-* Automatic batch sync to self-hosted Code Scout server (tar.gz compression)
+* Automatic batch sync to self-hosted CodeScout server (tar.gz compression)
 * Background isolate compression to avoid UI jank
 * Network request/response/error interception with request ID correlation
 * Atomic sync pipeline with retry and automatic backoff

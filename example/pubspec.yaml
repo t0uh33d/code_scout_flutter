@@ -1,5 +1,5 @@
 name: example
-description: 'Code Scout in a running app: every log level, tags and metadata, identity, redaction, and network capture through both companion packages.'
+description: 'CodeScout in a running app: every log level, tags and metadata, identity, redaction, and network capture through both companion packages.'
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -38,11 +38,11 @@ dependencies:
     path: ../packages/code_scout_http
   dio: ^5.9.2
   # The example's own database, so registerDatabase has something real to
-  # offer up. Code Scout depends on sqflite for its own log store, but an app
+  # offer up. CodeScout depends on sqflite for its own log store, but an app
   # naming it here is what a real one would do.
   sqflite: ^2.4.2
   path: ^1.9.1
-  # The other two shapes Code Scout can browse. Neither is a dependency of the
+  # The other two shapes CodeScout can browse. Neither is a dependency of the
   # SDK: CodeScoutKeyValue takes closures, so an app wires up whatever it
   # already uses and nothing is forced on anyone who does not.
   shared_preferences: ^2.5.5

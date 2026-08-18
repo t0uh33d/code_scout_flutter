@@ -1,4 +1,4 @@
-# Contributing to the Code Scout Flutter SDK
+# Contributing to the CodeScout Flutter SDK
 
 Thanks for looking. Pull requests are genuinely welcome.
 
@@ -66,7 +66,7 @@ cd example && flutter run
 ```
 
 It starts with no configuration at all. Logs go to the console and to the floating overlay on the
-device, and nothing is uploaded anywhere. That is a real way to use Code Scout rather than a
+device, and nothing is uploaded anywhere. That is a real way to use CodeScout rather than a
 degraded one, which is why it is the default here.
 
 To point it at a dashboard, copy `example/local.example.json` to `example/local.json`, fill in all

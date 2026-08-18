@@ -187,7 +187,7 @@ class _InfoScreenState extends State<InfoScreen> {
       case ConnectionOutcome.notFound:
         return const _Verdict(
           tone: _Tone.bad,
-          title: 'No Code Scout at that address',
+          title: 'No CodeScout at that address',
           detail: 'Something answered, but it is not a dashboard.',
         );
       case ConnectionOutcome.refused:
@@ -462,7 +462,7 @@ class _InfoScreenState extends State<InfoScreen> {
     final creds = CodeScout.instance.configuration.projectCredentials;
     final session = CodeScout.instance.currentSession;
     final out = StringBuffer()
-      ..writeln('Code Scout')
+      ..writeln('CodeScout')
       ..writeln('session ${CodeScout.instance.currentSessionId}')
       ..writeln('install ${session?.installationId ?? '—'}')
       ..writeln('user    ${session?.userId ?? 'anonymous'}')

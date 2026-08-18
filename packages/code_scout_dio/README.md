@@ -3,11 +3,11 @@
 [![pub.dev](https://img.shields.io/pub/v/code_scout_dio.svg)](https://pub.dev/packages/code_scout_dio)
 
 Captures every HTTP call your Dio client makes and shows it to you, either on the phone itself or
-on a [Code Scout](https://codescout.tech) dashboard you run.
+on a [CodeScout](https://codescout.tech) dashboard you run.
 
-This is the Dio half of Code Scout. The core package,
+This is the Dio half of CodeScout. The core package,
 [`code_scout`](https://pub.dev/packages/code_scout), does the logging and has no HTTP dependency
-of its own, which is why network capture lives out here. Installing Code Scout never drags Dio
+of its own, which is why network capture lives out here. Installing CodeScout never drags Dio
 into an app that does not already use it.
 
 ## Getting started
@@ -26,7 +26,7 @@ final dio = Dio();
 dio.interceptors.add(CodeScoutDioInterceptor());
 ```
 
-That is the whole setup. Code Scout itself still needs `init()` called somewhere, which is
+That is the whole setup. CodeScout itself still needs `init()` called somewhere, which is
 covered in the [core package's readme](https://pub.dev/packages/code_scout).
 
 ## What you get
@@ -48,12 +48,12 @@ as well as under Network.
 Nothing is redacted unless you ask for it. Out of the box the `Authorization` header and every
 request body are recorded as sent, which is deliberate, since the token is sometimes the bug you
 are chasing. Before you point this at real users, set `RedactionBehavior.recommended()` in your
-Code Scout configuration.
+CodeScout configuration.
 
 ## Checking it is working
 
 If the Network tab stays empty, open the panel and tap the info icon. The interceptor announces
-itself to Code Scout the moment you construct it, so the Info screen can tell you whether it is
+itself to CodeScout the moment you construct it, so the Info screen can tell you whether it is
 genuinely missing or simply installed and has not seen a call yet.
 
 ## License

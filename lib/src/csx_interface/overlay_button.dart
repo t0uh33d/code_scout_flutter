@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 /// The floating button.
 ///
-/// It is the only Code Scout pixel on screen while somebody is using the app,
+/// It is the only CodeScout pixel on screen while somebody is using the app,
 /// so it carries state rather than being a logo. Two signals, both earned:
 /// a count of errors you have not looked at, and whether a dashboard is
 /// watching this device right now.

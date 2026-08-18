@@ -1,10 +1,10 @@
-# Code Scout Flutter Package
+# CodeScout Flutter Package
 
 This file provides guidance to AI coding agents when working with the `code_scout` Flutter package.
 
 ## Package Overview
 
-`code_scout` is a Flutter SDK that captures application logs and network requests, stores them locally in SQLite, and periodically syncs them to a remote Code Scout server via compressed tar.gz uploads.
+`code_scout` is a Flutter SDK that captures application logs and network requests, stores them locally in SQLite, and periodically syncs them to a remote CodeScout server via compressed tar.gz uploads.
 
 **Package name:** `code_scout`
 **Version:** 1.4.0 (published)

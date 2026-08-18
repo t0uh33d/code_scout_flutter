@@ -106,7 +106,7 @@ void main() {
     );
 
     // The app's own database, exactly as an app would have it: opened by the
-    // app, and handed to Code Scout as a live connection.
+    // app, and handed to CodeScout as a live connection.
     shop = await databaseFactory.openDatabase('${scratch.path}/shop.db');
     await shop.execute('CREATE TABLE flags ('
         'id INTEGER PRIMARY KEY, name TEXT NOT NULL, value TEXT NOT NULL)');

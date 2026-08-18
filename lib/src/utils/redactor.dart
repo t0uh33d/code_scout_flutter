@@ -103,7 +103,7 @@ class Redactor {
 
     // Cut on a character boundary, not a byte one, or the tail is mojibake.
     final kept = utf8.decode(bytes.sublist(0, cfg.maxBodyBytes), allowMalformed: true);
-    return '$kept\n\n... truncated by Code Scout. The whole body was ${formatSize(bytes.length)}.';
+    return '$kept\n\n... truncated by CodeScout. The whole body was ${formatSize(bytes.length)}.';
   }
 
   static String? _encode(Object? value) {

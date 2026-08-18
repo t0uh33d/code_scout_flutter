@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// A database that will not open is something every caller in the SDK already
 /// handles: the session is skipped, the log is dropped, the app carries on. It
 /// must not also surface as an unhandled async error, because that is a crash
-/// report with Code Scout's name on it for a problem Code Scout absorbed.
+/// report with CodeScout's name on it for a problem CodeScout absorbed.
 ///
 /// No `databaseFactory` is set anywhere in this file on purpose — that is what
 /// makes opening fail. Each test file is its own isolate, so nothing another

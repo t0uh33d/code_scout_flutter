@@ -24,10 +24,10 @@ class RegisteredSource {
       };
 }
 
-/// Every database this app has offered to Code Scout.
+/// Every database this app has offered to CodeScout.
 ///
 /// Nothing is browsable until an app names it. There is deliberately no
-/// scanning of the documents directory for `*.db`: that finds Code Scout's own
+/// scanning of the documents directory for `*.db`: that finds CodeScout's own
 /// log store, some plugin's cache, and eventually an encrypted file it cannot
 /// open, and it means a developer cannot tell what they exposed by reading
 /// their own code.
@@ -121,6 +121,6 @@ class DatabaseRegistry {
     return entry.source.write(request);
   }
 
-  /// Forgets everything. For tests, and for an app that tears Code Scout down.
+  /// Forgets everything. For tests, and for an app that tears CodeScout down.
   void clear() => _sources.clear();
 }

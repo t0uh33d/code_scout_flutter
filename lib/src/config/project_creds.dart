@@ -21,7 +21,7 @@ enum ConnectionOutcome {
   /// Something answered and turned the credentials down.
   rejected,
 
-  /// Something answered, but there is no Code Scout at that address.
+  /// Something answered, but there is no CodeScout at that address.
   notFound,
 
   /// Reached, answered, and not one of the above.
@@ -136,7 +136,7 @@ class ProjectCredentials {
         await response.drain<void>();
         _outcome = switch (response.statusCode) {
           401 || 403 => ConnectionOutcome.rejected,
-          // Reached a server, but there is no Code Scout at that address.
+          // Reached a server, but there is no CodeScout at that address.
           // Usually a dashboard URL pasted with a path on the end.
           404 => ConnectionOutcome.notFound,
           _ => ConnectionOutcome.refused,

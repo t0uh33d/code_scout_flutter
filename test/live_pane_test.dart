@@ -53,7 +53,7 @@ void main() {
     expect(pairingAlphabet, '234679ACDEFGHJKMNPQRTUVWXYZ');
   });
 
-  // Local-only mode is a first-class way to use Code Scout, so the Live tab has
+  // Local-only mode is a first-class way to use CodeScout, so the Live tab has
   // to explain itself rather than looking broken.
   testWidgets('with no server configured it says so instead of failing',
       (tester) async {

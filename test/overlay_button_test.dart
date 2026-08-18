@@ -6,7 +6,7 @@ import 'package:code_scout/src/utils/draggable_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// The floating button is the only Code Scout pixel on screen while somebody is
+/// The floating button is the only CodeScout pixel on screen while somebody is
 /// using the app, so it has to say something and it has to stay reachable.
 void main() {
   setUp(LogBuffer.i.clear);

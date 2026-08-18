@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/pim_code_scout.svg" alt="Code Scout" width="320" />
+  <img src="assets/pim_code_scout.svg" alt="CodeScout" width="320" />
 </p>
 
 <p align="center">
@@ -22,10 +22,10 @@
 ---
 
 Capture logs and network calls on the device, then sync them to a self-hosted
-[Code Scout dashboard](https://github.com/getcodescout/code_scout) for searching, filtering and
+[CodeScout dashboard](https://github.com/getcodescout/code_scout) for searching, filtering and
 watching a device live.
 
-This is not a crash reporter. Crashlytics tells you the app crashed. Code Scout shows you what it
+This is not a crash reporter. Crashlytics tells you the app crashed. CodeScout shows you what it
 was doing for the five minutes before. Plenty of teams run both.
 
 **You do not need a server to start.** Add the package, tap the floating button, and read your logs
@@ -33,7 +33,7 @@ and network calls on the phone. That is a real way to use it rather than a trial
 credentials later, when you want them somewhere you can search.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/getcodescout/code_scout/main/.github/assets/screenshots/logs.png" alt="The Code Scout dashboard" width="880" />
+  <img src="https://raw.githubusercontent.com/getcodescout/code_scout/main/.github/assets/screenshots/logs.png" alt="The CodeScout dashboard" width="880" />
 </p>
 
 <p align="center">
@@ -99,7 +99,7 @@ final talker = Talker(observer: CodeScoutTalkerObserver());
 
 ### Initialize
 
-Code Scout needs a `BuildContext` to place its floating button into your widget tree, so `init()`
+CodeScout needs a `BuildContext` to place its floating button into your widget tree, so `init()`
 runs from inside a widget after the first frame rather than at the top of `main()`. That is where
 the `context` in the sample below comes from.
 
@@ -186,7 +186,7 @@ await CodeScout.instance.logMessage(
 
 ### Capture network calls
 
-Network interception lives in separate companion packages, so installing Code Scout never adds
+Network interception lives in separate companion packages, so installing CodeScout never adds
 Dio or `package:http` to an app that does not already use one. Each package takes a single line
 to set up.
 
@@ -237,7 +237,7 @@ interceptor is genuinely missing or is simply installed and has not seen a call 
 
 ### Name the person using the app
 
-Every app launch is a session. By default a session is anonymous, and Code Scout never guesses who someone is. Call `setUser` when you know:
+Every app launch is a session. By default a session is anonymous, and CodeScout never guesses who someone is. Call `setUser` when you know:
 
 ```dart
 await CodeScout.instance.setUser('u_8812');
@@ -249,7 +249,7 @@ await CodeScout.instance.setUser('u_8812', traits: {'plan': 'free'});
 await CodeScout.instance.setUser(null);
 ```
 
-The id is stored and never parsed, so hash it first if you would rather Code Scout never held the real one. Traits sit on the session rather than on the person, because what matters while debugging is what was true when it broke, not what is true now.
+The id is stored and never parsed, so hash it first if you would rather CodeScout never held the real one. Traits sit on the session rather than on the person, because what matters while debugging is what was true when it broke, not what is true now.
 
 You can call this at any point in a launch. The session record is re-sent with every upload, so a call made ten minutes in reaches the dashboard on the next sync.
 
@@ -268,7 +268,7 @@ The installation id is what lets the dashboard group launches by phone. It is ge
 
 ### Redaction
 
-Redaction is **opt-in**. Out of the box Code Scout records what your app sent, unchanged, because this is a debugging tool, and the token is sometimes the exact reason a request is failing.
+Redaction is **opt-in**. Out of the box CodeScout records what your app sent, unchanged, because this is a debugging tool, and the token is sometimes the exact reason a request is failing.
 
 Name what you want stripped and it is replaced at capture, before the log reaches SQLite, so it is never written to disk or uploaded:
 
@@ -362,7 +362,7 @@ and a developer on another, pair the two:
 
 1. On the dashboard, open the project's **Live devices** and press **New session**.
    It shows a six character code.
-2. On the phone, open the Code Scout panel and tap the **Go live** pill in the header.
+2. On the phone, open the CodeScout panel and tap the **Go live** pill in the header.
    Type the code and press Connect. The pill reads Pairing while it connects and then
    Live for as long as the session lasts.
 
@@ -395,7 +395,7 @@ await CodeScout.instance.dispose();
 ## How It Works
 
 ```
-Flutter App                                Code Scout Server
+Flutter App                                CodeScout Server
 ┌─────────────────────────┐               ┌─────────────────────────┐
 │ CodeScout.log()         │               │                         │
 │ NetworkManager          │               │  POST /api/logs/dump    │

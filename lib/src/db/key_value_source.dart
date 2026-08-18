@@ -17,7 +17,7 @@ typedef KeyWriter = Future<void> Function(String key, Object? value);
 ///
 /// Takes functions rather than a `SharedPreferences` or a Hive `Box`, and that
 /// is the whole design. Naming either type would put its package in the
-/// dependency tree of every app that installs Code Scout, for a feature that
+/// dependency tree of every app that installs CodeScout, for a feature that
 /// only runs in debug. Four lines in an app costs nothing; a dependency costs
 /// everybody.
 ///

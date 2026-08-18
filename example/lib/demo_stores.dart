@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 
-/// Every kind of local storage Code Scout can browse, opened and registered.
+/// Every kind of local storage CodeScout can browse, opened and registered.
 ///
 /// Three shapes, and only two adapters, which is the point worth taking away:
 /// SQLite gets [CodeScoutSqflite], and everything with a key and a value gets
@@ -20,7 +20,7 @@ class DemoStores {
   final Box<String> notes;
   final Box<String> drafts;
 
-  /// Opens everything and offers it to Code Scout.
+  /// Opens everything and offers it to CodeScout.
   ///
   /// Anything that fails to open is logged and skipped rather than thrown: an
   /// app that treats opening storage as a certainty crashes on startup when it

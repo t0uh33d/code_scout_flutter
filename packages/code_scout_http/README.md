@@ -3,9 +3,9 @@
 [![pub.dev](https://img.shields.io/pub/v/code_scout_http.svg)](https://pub.dev/packages/code_scout_http)
 
 Captures every HTTP call your app makes through `package:http` and shows it to you, either on the
-phone itself or on a [Code Scout](https://codescout.tech) dashboard you run.
+phone itself or on a [CodeScout](https://codescout.tech) dashboard you run.
 
-This is the `package:http` half of Code Scout. The core package,
+This is the `package:http` half of CodeScout. The core package,
 [`code_scout`](https://pub.dev/packages/code_scout), does the logging and has no HTTP dependency
 of its own, which is why network capture lives out here.
 
@@ -32,7 +32,7 @@ Pass your existing client in through `client:`. If you leave that argument out, 
 builds a plain new `http.Client` instead, and any base headers, proxy or timeout you had
 configured on yours are quietly lost.
 
-Code Scout itself still needs `init()` called somewhere, which is covered in the
+CodeScout itself still needs `init()` called somewhere, which is covered in the
 [core package's readme](https://pub.dev/packages/code_scout).
 
 ## What you get
@@ -58,12 +58,12 @@ very large download is buffered rather than streamed straight through.
 Nothing is redacted unless you ask for it. Out of the box the `Authorization` header and every
 request body are recorded as sent, which is deliberate, since the token is sometimes the bug you
 are chasing. Before you point this at real users, set `RedactionBehavior.recommended()` in your
-Code Scout configuration.
+CodeScout configuration.
 
 ## Checking it is working
 
 If the Network tab stays empty, open the panel and tap the info icon. The wrapper announces
-itself to Code Scout the moment you construct it, so the Info screen can tell you whether it is
+itself to CodeScout the moment you construct it, so the Info screen can tell you whether it is
 genuinely missing or simply installed and has not seen a call yet.
 
 ## License

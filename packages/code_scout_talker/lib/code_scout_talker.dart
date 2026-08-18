@@ -2,7 +2,7 @@ import 'package:code_scout/code_scout.dart' as cs;
 import 'package:flutter/foundation.dart';
 import 'package:talker/talker.dart';
 
-/// One Talker event translated into Code Scout's shape, before anything is
+/// One Talker event translated into CodeScout's shape, before anything is
 /// logged. Named so the translation can be asserted on directly.
 typedef MappedLog = ({
   cs.LogLevel level,
@@ -13,7 +13,7 @@ typedef MappedLog = ({
   Map<String, dynamic>? metadata,
 });
 
-/// Sends everything Talker logs to Code Scout as well.
+/// Sends everything Talker logs to CodeScout as well.
 ///
 /// Nothing about your logging changes. Talker keeps printing to the console,
 /// `TalkerScreen` keeps working, every `talker_*` logger you already use keeps
@@ -25,13 +25,13 @@ typedef MappedLog = ({
 /// final talker = Talker(observer: const CodeScoutTalkerObserver());
 /// ```
 ///
-/// Set Code Scout up as usual with `CodeScout.instance.init`. Before that has
+/// Set CodeScout up as usual with `CodeScout.instance.init`. Before that has
 /// happened, and in a build with no credentials, this does nothing rather than
 /// throwing or queueing.
 class CodeScoutTalkerObserver extends TalkerObserver {
   /// [tags] are added to every log this forwards, on top of the tag taken from
   /// Talker's own log key. Useful for telling forwarded logs apart when an app
-  /// calls both Talker and Code Scout directly.
+  /// calls both Talker and CodeScout directly.
   /// Says it is here as soon as it is built, like the other two companions, so
   /// Info can report all three the same way. Not const for that reason: a const
   /// constructor cannot run anything.
@@ -135,7 +135,7 @@ class CodeScoutTalkerObserver extends TalkerObserver {
     return {'talker_title': title};
   }
 
-  /// Talker has no fatal and Code Scout has no critical, so critical maps to
+  /// Talker has no fatal and CodeScout has no critical, so critical maps to
   /// fatal: both mean "the worst thing this logger has". Everything else lines
   /// up by name.
   ///

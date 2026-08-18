@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 export 'package:code_scout/code_scout.dart' show NetworkManager;
 
 /// An [http.BaseClient] wrapper that automatically captures network requests,
-/// responses, and errors for Code Scout.
+/// responses, and errors for CodeScout.
 ///
 /// ```dart
 /// final client = CodeScoutHttpClient(client: http.Client());

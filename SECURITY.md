@@ -18,7 +18,7 @@ would rather we did not.
 
 This SDK runs inside other people's apps, so the things worth reporting are:
 
-- Anything that sends data the app never intended to send. Code Scout sits in the middle of an
+- Anything that sends data the app never intended to send. CodeScout sits in the middle of an
   app's logging and its HTTP traffic, so a bug that captures more than it was asked to, or posts a
   batch anywhere other than the `link` in `ProjectCredentials`, puts a stranger's users' data on a
   server nobody chose.
@@ -32,7 +32,7 @@ This SDK runs inside other people's apps, so the things worth reporting are:
   three, because it hands the secret to a third party without anyone deciding to. The overlay's
   Info tab shows the secret as `set` plus its character count and never the value, and that is the
   bar every other code path has to meet.
-- Anything that lets Code Scout crash or hang the host app. A debugging library that takes the app
+- Anything that lets CodeScout crash or hang the host app. A debugging library that takes the app
   down with it is a serious failure, so `log()` and the shorthand methods `.v()` through `.f()`
   catch everything, and one of them throwing into your code is worth reporting. Three throws are
   deliberate and are not bugs. `logMessage()` rethrows, which is the whole reason to await it
@@ -77,7 +77,7 @@ secret as `set` plus its character count, never the value, precisely because tha
 screenshotted into bug reports.
 
 For a shipped app, call `CodeScout.instance.hideIcon()` right after `init()`, or only initialise
-Code Scout in debug builds. The buffer is memory only and dies with the process either way.
+CodeScout in debug builds. The buffer is memory only and dies with the process either way.
 
 ## The database browser
 
@@ -180,6 +180,6 @@ Decide about redaction before you ship, not after. Read
 `RedactionBehavior.recommended()` as a starting point rather than a finished answer, since only you
 know what your app puts in its own log lines.
 
-Decide about the overlay in the same breath: hide it with `hideIcon()`, or initialise Code Scout
+Decide about the overlay in the same breath: hide it with `hideIcon()`, or initialise CodeScout
 only in debug builds. Point `link` at an `https://` URL. And leave `writable: true` and
 `allowInRelease` out of any `registerDatabase` call that ships; the defaults are the safe ones.
