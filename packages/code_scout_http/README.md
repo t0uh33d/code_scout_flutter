@@ -66,6 +66,27 @@ If the Network tab stays empty, open the panel and tap the info icon. The wrappe
 itself to CodeScout the moment you construct it, so the Info screen can tell you whether it is
 genuinely missing or simply installed and has not seen a call yet.
 
+## The rest of CodeScout
+
+Network capture is one part of it. If you point the SDK at a dashboard you run yourself, the same
+calls end up here, next to the logs the app wrote around them:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/getcodescout/code_scout/main/.github/assets/screenshots/network.png" alt="The CodeScout network screen: a waterfall of HTTP calls beside a split-pane inspector" width="800" />
+</p>
+
+And a few things that are harder to get anywhere else:
+
+- **Watch a device live.** Read somebody a six character code and their calls arrive in your
+  browser as they tap. No install and no account for them.
+- **Read the phone's own database.** While paired, browse the app's SQLite tables,
+  `shared_preferences` and Hive boxes.
+- **Hand a bug to your coding agent.** The dashboard speaks MCP, so an agent can read a whole
+  session timeline itself.
+
+[Take the tour](https://codescout.tech/docs/tour/) if you want to see it before installing
+anything.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

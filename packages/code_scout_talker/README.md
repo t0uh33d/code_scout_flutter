@@ -101,6 +101,27 @@ that is not yet initialised, has no credentials, or fails for any other reason
 cannot interfere with your own `talker.info()` call. A logging tool that can
 throw is a logging tool that takes down the code it was meant to watch.
 
+## The rest of CodeScout
+
+Forwarding Talker is one part of it. Once the logs reach a dashboard you run yourself, they are
+searchable across every device rather than only on the phone in your hand:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/getcodescout/code_scout/main/.github/assets/screenshots/logs.png" alt="The CodeScout log viewer, showing logs from a Flutter app with level toggles and tag filters" width="800" />
+</p>
+
+And a few things that are harder to get anywhere else:
+
+- **Watch a device live.** Read somebody a six character code and their logs arrive in your browser
+  as they tap. No install and no account for them.
+- **Read the phone's own database.** While paired, browse the app's SQLite tables,
+  `shared_preferences` and Hive boxes.
+- **Hand a bug to your coding agent.** The dashboard speaks MCP, so an agent can read a whole
+  session timeline itself.
+
+[Take the tour](https://codescout.tech/docs/tour/) if you want to see it before installing
+anything.
+
 ## License
 
 MIT - see [LICENSE](LICENSE) for details.

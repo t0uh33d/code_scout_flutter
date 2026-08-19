@@ -123,7 +123,8 @@ lib/
     │   └── network_data.dart            # NetworkData union type
     ├── csx_interface/
     │   ├── overlay_manager.dart         # Floating button overlay
-    │   ├── menu.dart                    # CSxInterface sheet — Logs/Network/Live/Session tabs
+    │   ├── menu.dart                    # CSxInterface sheet — Logs/Network/Errors tabs, with
+    │   │                                #   Data and Info behind header icons
     │   ├── live_pane.dart               # The Live tab — pairing code entry and session state
     │   ├── log_buffer.dart              # LogBuffer — capped in-memory ring the overlay reads
     │   └── overlay_theme.dart           # The dashboard's palette, for the overlay

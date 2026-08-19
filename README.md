@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  A lightweight, open-source logging and network inspection SDK for Flutter.
+  See what your Flutter app is doing, on your machine or on somebody else's phone.
 </p>
 
 <p align="center">
@@ -21,40 +21,58 @@
 
 ---
 
-Capture logs and network calls on the device, then sync them to a self-hosted
-[CodeScout dashboard](https://github.com/getcodescout/code_scout) for searching, filtering and
-watching a device live.
+`print()` works until the bug is on a phone you are not holding. This is what you reach for after
+that: structured logs and every HTTP call, kept on the device, and searchable in a dashboard you
+run yourself when you want one.
 
 This is not a crash reporter. Crashlytics tells you the app crashed. CodeScout shows you what it
 was doing for the five minutes before. Plenty of teams run both.
 
 **You do not need a server to start.** Add the package, tap the floating button, and read your logs
-and network calls on the phone. That is a real way to use it rather than a trial version. Add
-credentials later, when you want them somewhere you can search.
+and network calls on the phone. That is a real way to use it, not a trial version. Add credentials
+later, when you want them somewhere you can search.
+
+```dart
+CodeScout.instance.i('User signed in', tags: {'auth'});
+CodeScout.instance.e('Payment declined', error: e, stackTrace: s);
+```
+
+## What you get
+
+**Straight away, with no server.** Colour-coded console output, and a panel inside your own app
+with three tabs: every log this launch has written, every HTTP call with its bodies, and the errors
+on their own with counts. Nothing leaves the phone.
+
+**Once you point it at a dashboard.** Everything above, from every device, searchable.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/getcodescout/code_scout/main/.github/assets/screenshots/logs.png" alt="The CodeScout dashboard" width="880" />
+  <img src="https://raw.githubusercontent.com/getcodescout/code_scout/main/.github/assets/screenshots/logs.png" alt="The CodeScout log viewer, showing logs from a Flutter app with level toggles and tag filters" width="880" />
 </p>
 
-<p align="center">
-  <em>Where your logs end up, if you point it at a dashboard.</em>
-</p>
+| | |
+|---|---|
+| **Search it the way you think** | `level:error tag:checkout last:24h`, or `user:ada@example.com` for everything one person hit. Filters live in the URL, so a search is a link you can paste to somebody. |
+| **One bug is one row** | Twenty-six copies of the same failure collapse into a single line with a count, so this morning's new bug is not buried under last week's. |
+| **Replay one launch** | Every log and network call from one run of the app, in order, with the time since launch beside each row. |
+| **Watch a phone live** | Read them a six character code and their logs arrive in your browser as they tap. No install, no TestFlight round trip, no account for them. |
+| **Read the phone's own database** | While paired, browse the app's SQLite tables, `shared_preferences` and Hive boxes, and change one value at a time. |
+| **Hand it to a coding agent** | The dashboard speaks MCP, so your agent can read a session timeline itself instead of you pasting stack traces into a chat. |
 
-## Features
+## How it behaves
 
-- **Structured logging** with seven levels (verbose, debug, info, warning, error, fatal, and
-  system for the SDK's own notes), plus tags and metadata
-- **Network interception** for Dio and `http`. Correlates request, response, and error by request ID
-- **Backs off when told to**. A throttled or busy server is honoured, not retried into the ground
-- **Redaction you control**. Name what to strip and it never reaches disk or the network; name nothing and you see exactly what your app sent
-- **Sessions and devices**. Every app launch is recorded with the device it ran on and the build it was, so you can ask what happened on one phone
-- **Local persistence** in SQLite so logs survive app restarts
-- **Automatic batch sync**. Compresses logs to tar.gz and uploads on a configurable interval
-- **No HTTP client dependency**. The core talks to your server with `dart:io`, so adding Code
-  Scout never drags Dio or `package:http` into an app that does not already use them
-- **In-app panel**. Read your logs, network calls and errors on the device itself, and browse
-  the app's own database, with no server needed at all
-- **Lightweight**, designed to add minimal overhead to your app
+- **A bad network costs a delay, not your logs.** Everything is written to SQLite first and
+  uploaded in batches. Tunnel, aeroplane, dead server: they wait and retry. After five consecutive
+  failures it goes quiet for five minutes, then tries again. It pauses, it never gives up.
+- **It backs off when told to.** A `429` or `503` is honoured with its `Retry-After` rather than
+  retried into the ground, and a `413` halves the batch.
+- **Nothing is hidden unless you name it.** Redaction is opt-in, because the token is sometimes the
+  bug. Name your auth headers and password fields and they are stripped on the phone, before
+  anything is written to disk.
+- **It never infers who the user is.** Sessions record the device, the OS and the build. A person
+  is attached only when you call `setUser()`.
+- **Adding it does not add an HTTP client.** The core talks to your server with `dart:io`, so
+  installing this never drags Dio or `package:http` into an app that does not already use them.
+- **Compression runs in an isolate**, so a large batch never janks a frame.
 
 ## Packages
 
