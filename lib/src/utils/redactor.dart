@@ -41,9 +41,53 @@ class Redactor {
   /// only looking at the top level would miss it.
   static Object? body(Object? raw, [RedactionBehavior? config]) {
     final cfg = config ?? _config;
-    final redacted = cfg.bodyKeys.isEmpty ? raw : _walk(raw, cfg.bodyKeyNames);
+    final redacted = cfg.bodyKeys.isEmpty ? raw : _redactBody(raw, cfg.bodyKeyNames);
     // The cap applies either way: it is about upload size, not about secrets.
     return _cap(redacted, cfg);
+  }
+
+  /// Walks a body, decoding it first when the JSON arrived as a string.
+  ///
+  /// `_walk` matches maps and lists and hands anything else back untouched,
+  /// which is right for a number or a sentence and was silently wrong for the
+  /// commonest body there is. `code_scout_http` reads `request.body` and
+  /// `utf8.decode(bytes)`, both strings, so every request and response it
+  /// captured went to SQLite and into an upload with `password` and
+  /// `Authorization` still in it, however carefully the app had named them.
+  /// Dio decodes JSON into a Map before the interceptor sees it, so the same
+  /// configuration worked there, which is what kept this hidden.
+  ///
+  /// Re-encoded on the way out so a string body stays a string: the dashboard
+  /// renders an http call and a dio call through the same view, and changing
+  /// the type here would make them disagree.
+  static Object? _redactBody(Object? raw, Set<String> redact) {
+    if (raw is! String) return _walk(raw, redact);
+
+    final decoded = _decodeStructure(raw);
+    // Not JSON, or JSON with no keys in it. There is nothing to match a name
+    // against, and rewriting a log line or an HTML error page would destroy
+    // the evidence to no purpose.
+    if (decoded == null) return raw;
+
+    return _encode(_walk(decoded, redact)) ?? raw;
+  }
+
+  /// Decodes [raw] only if it is a JSON object or array.
+  ///
+  /// The cheap first-character test matters: this runs on every captured body,
+  /// and most of them are not JSON at all.
+  static Object? _decodeStructure(String raw) {
+    final trimmed = raw.trimLeft();
+    if (trimmed.isEmpty) return null;
+    final first = trimmed.codeUnitAt(0);
+    if (first != 0x7B && first != 0x5B) return null; // '{' or '['
+
+    try {
+      final value = jsonDecode(raw);
+      return value is Map || value is List ? value : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Log metadata gets the same treatment as a body. A developer logging
