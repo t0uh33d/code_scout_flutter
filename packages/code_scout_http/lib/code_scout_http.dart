@@ -22,6 +22,23 @@ class CodeScoutHttpClient extends http.BaseClient {
     NetworkManager.i.registerIntegration('http');
   }
 
+  /// Closes the wrapped client, releasing its connection pool.
+  ///
+  /// `BaseClient.close()` does nothing, so without this a caller following
+  /// package:http's own advice — build a client for a unit of work, close it in
+  /// a finally — kept every socket the inner client had pooled, for the life of
+  /// the process. Wrapping a client silently changed what closing it meant.
+  ///
+  /// It closes the inner client whether or not the caller supplied it, which is
+  /// what RetryClient and the other wrappers in the ecosystem do: a wrapper
+  /// owns its inner for lifecycle purposes, and the alternative leaks by
+  /// default in the commoner case.
+  @override
+  void close() {
+    _innerClient.close();
+    super.close();
+  }
+
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     final reqID = NetworkRequestData.newRequestID();

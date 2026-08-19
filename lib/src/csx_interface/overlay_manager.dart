@@ -143,20 +143,29 @@ class OverlayManager {
       // event loop where a throw is nobody's to catch.
       if (context == null) return;
 
-      if (_entries.isEmpty) {
-        _entries.add(entry);
-      }
+      // Insert only what is tracked, and track only one.
+      //
+      // The guard used to cover the add and not the insert, so a second
+      // showIcon() put a second button on screen that nothing held a reference
+      // to: removeOverlay() took the one entry it knew about and the other
+      // stayed, past hideIcon(), for the life of the app. Calling showIcon()
+      // defensively from a screen's initState is an ordinary thing to do, and
+      // each visit left another one behind.
+      if (_entries.isNotEmpty) return;
+
+      _entries.add(entry);
       Overlay.of(context!).insert(entry);
     });
   }
 
-  // Remove an existing overlay
+  // Remove an existing overlay.
+  //
+  // Drains rather than popping one, so any entry left by an older build is
+  // cleared rather than stranded.
   void removeOverlay() {
-    if (_entries.isNotEmpty) {
-      final lastEntry = _entries.removeLast();
-      lastEntry.remove();
+    while (_entries.isNotEmpty) {
+      _entries.removeLast().remove();
     }
-    return;
   }
 }
 

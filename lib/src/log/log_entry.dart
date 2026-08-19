@@ -39,13 +39,25 @@ class LogEntry {
     required this.sessionID,
     this.error,
     this.stackTrace,
-    this.metadata,
+    Map<String, dynamic>? metadata,
     this.tags = const {},
     this.isNetworkCall = false,
     this.requestId,
     this.callPhase,
   })  : id = const Uuid().v4(),
-        timestamp = DateTime.now().toUtc() {
+        timestamp = DateTime.now().toUtc(),
+        // Redacted here, at capture, rather than only on the way to JSON.
+        //
+        // toJson() stripped it, so SQLite and the upload were clean and the
+        // dashboard showed [redacted] — which is exactly what made this hard
+        // to notice. Everything that reads the entry directly still had the
+        // real value: the overlay's detail screen, the console printer, and
+        // the copy button whose output people paste into bug reports.
+        //
+        // Network metadata was already redacted when it was built, so it is
+        // left alone; walking it twice would be harmless but says something
+        // untrue about where the responsibility sits.
+        metadata = isNetworkCall ? metadata : Redactor.metadata(metadata) {
     final includeCurrentStackTrace =
         CodeScout.instance.configuration.logging.includeCurrentStackTrace;
 
@@ -76,9 +88,10 @@ class LogEntry {
       'stack_trace': jsonEncode(
         _stackCallDetails?.map((e) => e.toJson()).toList() ?? [],
       ),
-      // Network metadata was redacted when it was built; this covers the other
-      // case — a developer logging `metadata: {'token': ...}` by hand, which is
-      // the same problem and deserves the same answer.
+      // Already redacted: network metadata when it was built, everything else
+      // in the constructor. Kept as a second pass rather than dropped because
+      // it is idempotent — a value that is already the placeholder walks to the
+      // placeholder — and this is the last point before the wire.
       'metadata': jsonEncode(
         isNetworkCall ? (metadata ?? {}) : (Redactor.metadata(metadata) ?? {}),
       ),
