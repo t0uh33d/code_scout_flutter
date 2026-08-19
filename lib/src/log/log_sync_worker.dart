@@ -145,6 +145,11 @@ class LogSyncWorker {
     List<String> logIds = [];
     File? file;
 
+    // Set when a batch of one is refused for size. Such a log cannot be made
+    // to fit by any amount of halving, so it is deleted rather than rolled
+    // back — see the UploadTooLarge branch below.
+    bool discardOversized = false;
+
     try {
       _effectiveBatchSize ??= syncBehaviour.maxBatchSize;
       logs = await LogPersistenceService.i
@@ -194,17 +199,35 @@ class LogSyncWorker {
         _backoffUntil = DateTime.now().add(e.retryAfter);
         log('LogSyncWorker: server asked for ${e.retryAfter.inSeconds}s of quiet.');
       } else if (e is UploadTooLarge) {
-        _shrinkBatch();
-        log('LogSyncWorker: batch refused as too large, retrying with $_effectiveBatchSize.');
+        // A batch of one that is still refused can never be made to fit, and
+        // halving one is one. Rolling it back means re-sending the same log on
+        // every cycle forever, and because it is the oldest row it is picked
+        // first every time — so nothing written after it ever uploads either
+        // and the device's database grows without bound behind it. One log is
+        // a smaller loss than every log.
+        if (logIds.length <= 1) {
+          discardOversized = true;
+          log('LogSyncWorker: a single log is larger than the server accepts; '
+              'discarding it so the queue can drain.');
+        } else {
+          _shrinkBatch();
+          log('LogSyncWorker: batch refused as too large, retrying with $_effectiveBatchSize.');
+        }
       } else {
         log('LogSyncWorker: Sync failed: $e', stackTrace: st);
         _consecutiveFailures++;
       }
 
-      // Roll back sync_status so logs are retried next cycle
+      // Roll back sync_status so logs are retried next cycle — unless the
+      // server has told us this one will never be accepted, in which case
+      // retrying it is what jams the queue.
       if (logIds.isNotEmpty) {
         try {
-          await LogPersistenceService.i.markAsUnsync(logIds);
+          if (discardOversized) {
+            await LogPersistenceService.i.deleteLogEntries(logIds);
+          } else {
+            await LogPersistenceService.i.markAsUnsync(logIds);
+          }
         } catch (rollbackError) {
           log('LogSyncWorker: Failed to rollback sync status: $rollbackError');
         }
@@ -234,8 +257,13 @@ class LogSyncWorker {
     }
   }
 
-  /// Halves the batch, with a floor of one. At one, a log the server still
-  /// refuses can never fit, so it is dropped rather than retried forever.
+  /// Halves the batch, with a floor of one.
+  ///
+  /// Dropping the log that will not fit is the caller's job, in the
+  /// UploadTooLarge branch of [_sync]. This comment used to claim it happened
+  /// here, and it did not happen anywhere: a batch already at one was halved to
+  /// one and rolled back, so an oversized log was re-sent every cycle for the
+  /// life of the app and held every later log behind it.
   void _shrinkBatch() {
     final current = _effectiveBatchSize ?? 100;
     _effectiveBatchSize = current <= 1 ? 1 : current ~/ 2;

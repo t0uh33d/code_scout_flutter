@@ -144,8 +144,8 @@ class LiveSessionClient extends ChangeNotifier {
     // person staring at a spinner.
     final ok = await accepted.future.timeout(
       const Duration(seconds: 15),
-      onTimeout: () {
-        _fail('The server did not answer. Try again.');
+      onTimeout: () async {
+        await _fail('The server did not answer. Try again.');
         return false;
       },
     );
@@ -295,8 +295,16 @@ class LiveSessionClient extends ChangeNotifier {
     }
   }
 
-  bool _fail(String message) {
+  /// The voluntary end: we gave up, rather than the far end hanging up.
+  ///
+  /// It closes the socket for the same reason [_finish] does. It used not to,
+  /// and a pairing that timed out left the connection and its listener alive:
+  /// the next start() overwrote _socket and _subscription, orphaning both, and
+  /// when that abandoned socket eventually closed its onDone still fired
+  /// _finish — tearing down the healthy session that had replaced it.
+  Future<bool> _fail(String message) async {
     _error = message;
+    await _closeSocket();
     _setState(LiveSessionState.ended);
     return false;
   }

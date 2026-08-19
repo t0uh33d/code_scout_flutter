@@ -114,19 +114,45 @@ class ProjectCredentials {
 
   double? get serverSampleRate => _serverSampleRate;
 
+  /// How long any single step of the credential check may take.
+  ///
+  /// Short on purpose: this runs during init() and the app is waiting on it.
+  /// A server that is slow to answer here is one the sync worker will get to
+  /// on its own interval anyway, so there is nothing to gain by waiting.
+  static const Duration _validateTimeout = Duration(seconds: 10);
+
   Future<bool> validateCredentials() async {
     if (_credsValid != null) return _credsValid!;
 
     final client = HttpClient();
+    // Every await below is bounded, and none of them was.
+    //
+    // init() waits on this check before it starts the sync worker, so a server
+    // that accepts the connection and then says nothing — a captive portal, a
+    // proxy in front of a restarting process — held the whole launch: no
+    // uploads, no live session, for as long as the app stayed open. The
+    // `on TimeoutException` arm below was already written for this and could
+    // never fire, because nothing here had a deadline.
+    client.connectionTimeout = _validateTimeout;
     try {
       final uri = Uri.parse('${link}api/validate');
-      final request = await client.getUrl(uri);
+      final request = await client.getUrl(uri).timeout(_validateTimeout);
       authHeaders.forEach((k, v) => request.headers.set(k, v));
-      final response = await request.close();
+      final response = await request.close().timeout(
+        _validateTimeout,
+        onTimeout: () {
+          // force, or close() waits on the request that is itself stuck.
+          client.close(force: true);
+          throw TimeoutException('The server did not answer', _validateTimeout);
+        },
+      );
       _credsValid = response.statusCode == 200;
 
       if (_credsValid!) {
-        final body = await response.transform(utf8.decoder).join();
+        final body = await response
+            .transform(utf8.decoder)
+            .join()
+            .timeout(_validateTimeout);
         _serverSampleRate = _readSampleRate(body);
         _projectName = _readProjectName(body);
         _outcome = ConnectionOutcome.ok;
