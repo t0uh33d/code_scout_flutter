@@ -6,6 +6,7 @@ import 'package:code_scout/src/csx_interface/log_buffer.dart';
 import 'package:code_scout/src/live/live_session_client.dart';
 import 'package:code_scout/src/log/log_persistence_service.dart';
 import 'package:code_scout/src/log/log_printer.dart';
+import 'package:code_scout/src/log/log_sync_worker.dart';
 import 'package:code_scout/src/utils/stack_trace_parser.dart';
 import 'package:uuid/uuid.dart';
 
@@ -137,6 +138,18 @@ class LogEntry {
       // Sampling one out means the row changed and nothing anywhere says who
       // changed it, which is the one question the record exists to answer.
       if (level != LogLevel.system && !CodeScout.instance.isSessionSampledIn) return;
+
+      // Nothing to upload to means nothing to write. SQLite here is the sync
+      // worker's queue, not a store anyone reads back: the on-device panel is
+      // served by LogBuffer's capped ring, and no code path ever selects a row
+      // for display. Rows are deleted when their batch uploads, so with no
+      // uploader configured — no credentials, or no LogSyncBehavior — every
+      // log an app ever writes stays on the user's phone for good.
+      //
+      // Local mode is a documented way to run rather than a degraded one, and
+      // leaving out the sync block is the most common setup mistake there is,
+      // so those two are exactly the configurations that must not fill a disk.
+      if (!LogSyncWorker.i.canUpload) return;
 
       await LogPersistenceService.i.saveLogEntry(this);
     } catch (e, st) {

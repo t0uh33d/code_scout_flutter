@@ -77,8 +77,17 @@ void main() {
     // dart:developer and returned, so awaiting told you nothing. The doc
     // comment said to use it "if you need to await persistence".
     test('throws when the write fails', () async {
+      // An uploader has to be configured for the write to be attempted at
+      // all: with none, processLogEntry returns before SQLite, because a row
+      // nothing can ever upload would only accumulate on the device.
       CodeScout.instance.configuration = CodeScoutConfiguration(
         logging: LoggingBehavior(minimumLevel: LogLevel.all, printToConsole: false),
+        projectCredentials: ProjectCredentials(
+          link: 'https://scout.example.dev/',
+          projectID: 'a3f2c7d1-4e88-4b21-9f60-1c2d3e4f9c41',
+          projectSecret: 'secret',
+        ),
+        sync: LogSyncBehavior(syncInterval: const Duration(seconds: 30)),
       );
 
       // No database is initialised in a plain test, so the write cannot land.

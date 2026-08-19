@@ -36,6 +36,16 @@ class LogSyncWorker {
   static const int _maxConsecutiveFailures = 5;
   static const Duration _uploadTimeout = Duration(seconds: 30);
 
+  /// Bounds establishing the connection, separately from waiting for a reply.
+  /// A phone on a captive portal gets a TCP handshake and then silence, which
+  /// no response deadline covers because there is no request in flight yet.
+  static const Duration _connectTimeout = Duration(seconds: 10);
+
+  /// The caller's backstop, deliberately longer than [_uploadTimeout] so the
+  /// deadline inside _uploadTarGz always fires first. That one can close the
+  /// client; this one can only stop waiting.
+  static const Duration _uploadBackstop = Duration(seconds: 40);
+
   /// How long to go quiet after [_maxConsecutiveFailures] in a row. Long
   /// enough that a server which is genuinely gone is left alone, short enough
   /// that one which comes back is picked up without restarting the app.
@@ -49,6 +59,18 @@ class LogSyncWorker {
   }
 
   bool get isRunning => _syncTimer?.isActive ?? false;
+
+  /// Whether a batch could ever leave this device.
+  ///
+  /// Both halves are required and neither has a default: without credentials
+  /// there is nowhere to send, and without a [LogSyncBehavior] there is no
+  /// interval to send on. This is also what decides whether a log is written
+  /// to SQLite at all, because a row is only deleted once it has been
+  /// uploaded — see LogEntry.processLogEntry.
+  bool get canUpload {
+    final config = CodeScout.instance.configuration;
+    return config.projectCredentials != null && config.sync != null;
+  }
 
   void start() {
     if (_syncTimer?.isActive ?? false) return;
@@ -149,7 +171,7 @@ class LogSyncWorker {
 
       // Upload with timeout
       await _uploadTarGz(creds.link, file, creds.authHeaders)
-          .timeout(_uploadTimeout);
+          .timeout(_uploadBackstop);
 
       // Success — delete the logs from DB
       await LogPersistenceService.i.deleteLogEntries(logIds);
@@ -268,6 +290,10 @@ class LogSyncWorker {
     bodyParts.add(utf8.encode('\r\n--$boundary--\r\n'));
 
     final client = HttpClient();
+    // Bounds the connect phase on its own. A network that accepts the SYN and
+    // then goes quiet — a captive portal, a draining load balancer — would
+    // otherwise sit here with no deadline of its own at all.
+    client.connectionTimeout = _connectTimeout;
     try {
       final request = await client.postUrl(uri);
       request.headers.set('Content-Type', 'multipart/form-data; boundary=$boundary');
@@ -277,7 +303,24 @@ class LogSyncWorker {
         request.add(part);
       }
 
-      final response = await request.close();
+      // The deadline belongs in here, not only on the caller's await.
+      //
+      // `.timeout()` at the call site abandons the *await*; it cannot cancel
+      // the request. This function stays suspended on request.close(), so the
+      // finally below never runs and the client keeps its socket for as long
+      // as the server holds the connection open. The timer then fires again on
+      // the next interval and builds another one: one leaked HttpClient and
+      // socket per sync cycle, for as long as the server hangs.
+      //
+      // force: true is the point — a plain close() waits for in-flight
+      // requests, which is precisely the thing that is stuck.
+      final response = await request.close().timeout(
+        _uploadTimeout,
+        onTimeout: () {
+          client.close(force: true);
+          throw TimeoutException('Upload timed out', _uploadTimeout);
+        },
+      );
 
       // Read the status while it is still a number. Collapsing everything into
       // one untyped throw is what made a throttle indistinguishable from an

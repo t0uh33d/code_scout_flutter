@@ -198,9 +198,21 @@ void main() {
       // changed the device and still returned ok, but the record of who did it
       // was never written to SQLite and never uploaded — so nothing existed
       // three weeks later, which is the one thing it is for.
+      // Credentials and a sync block because there is a third gate below the
+      // other two: with no uploader configured nothing is written to SQLite at
+      // all, since a row is only removed once it has uploaded. A device being
+      // edited from the dashboard is in a live session, so it has credentials
+      // by definition; the sync block is what makes the audit line reach the
+      // server rather than only the socket.
       await CodeScout.instance.init(
         configuration: CodeScoutConfiguration(
           logging: LoggingBehavior(sessionSampleRate: 0.0),
+          projectCredentials: ProjectCredentials(
+            link: 'https://scout.example.dev/',
+            projectID: 'a3f2c7d1-4e88-4b21-9f60-1c2d3e4f9c41',
+            projectSecret: 'secret',
+          ),
+          sync: LogSyncBehavior(syncInterval: const Duration(seconds: 30)),
         ),
       );
       addTearDown(CodeScout.instance.dispose);

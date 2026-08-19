@@ -98,11 +98,25 @@ void main() {
       final dir = await databaseFactory.getDatabasesPath();
       await databaseFactory.deleteDatabase('$dir/code_scout.db');
       LogBuffer.i.clear();
+
+    // Persistence now requires a configured uploader: SQLite is the sync
+    // worker's queue and a row is only deleted once it uploads, so with no
+    // uploader nothing is written at all. Held constant here so the sampling
+    // gate is the only thing this group varies.
+    CodeScout.instance.configuration = CodeScoutConfiguration(
+      projectCredentials: ProjectCredentials(
+        link: 'https://scout.example.dev/',
+        projectID: 'a3f2c7d1-4e88-4b21-9f60-1c2d3e4f9c41',
+        projectSecret: 'secret',
+      ),
+      sync: LogSyncBehavior(syncInterval: const Duration(seconds: 30)),
+    );
     });
 
     tearDown(() async {
       await LogPersistenceService.i.close();
       CodeScout.instance.isSessionSampledIn = true;
+      CodeScout.instance.configuration = CodeScoutConfiguration();
     });
 
     Future<int> storedLogCount() async {
