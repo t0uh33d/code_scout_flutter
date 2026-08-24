@@ -39,9 +39,17 @@ CodeScout.instance.e('Payment declined', error: e, stackTrace: s);
 
 ## What you get
 
-**Straight away, with no server.** Colour-coded console output, and a panel inside your own app
-with three tabs: every log this launch has written, every HTTP call with its bodies, and the errors
-on their own with counts. Nothing leaves the phone.
+**Straight away, with no server.** Colour-coded console output, and a panel inside your own app,
+opened from a floating button. Nothing leaves the phone.
+
+| Logs | Network | Errors |
+|---|---|---|
+| <img src="https://raw.githubusercontent.com/getcodescout/code_scout_flutter/main/.github/assets/screenshots/overlay-logs.png" alt="The Logs tab of the in-app CodeScout panel" width="240" /> | <img src="https://raw.githubusercontent.com/getcodescout/code_scout_flutter/main/.github/assets/screenshots/overlay-network.png" alt="The Network tab of the in-app CodeScout panel" width="240" /> | <img src="https://raw.githubusercontent.com/getcodescout/code_scout_flutter/main/.github/assets/screenshots/overlay-errors.png" alt="The Errors tab of the in-app CodeScout panel" width="240" /> |
+| Everything this launch wrote, with the levels and tags as filters. | One row per call with its status and duration, both bodies a tap away. | The failures on their own, already counted. |
+
+Two more screens sit behind icons in the header. **Data** reads your app's own SQLite tables,
+`shared_preferences` and Hive boxes on the device. **Info** runs a connection test and tells you
+which step failed, which answers "why is nothing arriving" more often than anything else.
 
 **Once you point it at a dashboard.** Everything above, from every device, searchable.
 
