@@ -1,3 +1,16 @@
+## 1.0.2
+
+### Changed
+
+- **The name reads CodeScout, one word.** The description published with 1.0.1
+  still said "Code Scout", because the rename landed after that version went out
+  and pub.dev only takes a new listing with a new version.
+- **The readme says what the rest of CodeScout does.** It used to end at the
+  licence, so somebody who installed this for Talker capture had no way to learn
+  that live device streaming, the database browser and the agent tools exist.
+
+No code changed in this release.
+
 ## 1.0.1
 
 ### Changed

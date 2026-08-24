@@ -1,3 +1,16 @@
+## 1.5.2
+
+### Changed
+
+- **The readme now shows the in-app panel.** Until this release every screenshot
+  anywhere was of the dashboard, which is the half you get after standing up a
+  Postgres. The half you get in two minutes, the Logs, Network and Errors tabs
+  inside your own app, had no picture on pub.dev, on the website or in any
+  readme. There are three now, generated from a widget test rather than captured
+  by hand so they cannot quietly go out of date.
+
+No code changed in this release.
+
 ## 1.5.1
 
 ### Changed
