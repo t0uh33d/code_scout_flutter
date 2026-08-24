@@ -4,4 +4,15 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Android 9 and newer refuse cleartext HTTP by default, and a dashboard
+         you are running on your laptop is http://<your-lan-ip>:24275. Without
+         this the upload fails on a real device with nothing on screen to say
+         why: the SDK catches the socket error, keeps the logs, and retries.
+
+         Debug manifest only, so it is merged into debug builds and cannot
+         reach a release one. An app of your own wants a network security
+         config naming the host rather than this blanket flag.
+    -->
+    <application android:usesCleartextTraffic="true" />
 </manifest>

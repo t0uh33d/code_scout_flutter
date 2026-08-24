@@ -45,5 +45,17 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- iOS refuses plain HTTP by default, and a dashboard running on your
+		     laptop is http://<your-lan-ip>:24275. Without this the upload fails
+		     on a real device with nothing on screen to say why.
+
+		     This is the CodeScout example app, which is never shipped to the
+		     App Store. A real app wants NSExceptionDomains naming the one host
+		     it needs, or an https dashboard and none of this. -->
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 </dict>
 </plist>

@@ -1,6 +1,8 @@
 {
   "_": "Copy to local.json, which is gitignored, then: flutter run --dart-define-from-file=local.json",
-  "_url": "localhost works on the iOS simulator and desktop. Android emulator: http://10.0.2.2:24275/ . A real device: your machine's LAN IP.",
+  "_url": "Simulator or desktop: http://localhost:24275/ . Android emulator: http://10.0.2.2:24275/ . A real device: your machine's LAN IP, and the phone has to be on the same network as the laptop.",
+  "_cleartext": "Plain http to a LAN address works here because the example allows it in debug builds only (android/app/src/debug/AndroidManifest.xml and the ATS exception in ios/Runner/Info.plist). An app of your own needs its own arrangement, or an https dashboard.",
+  "_live": "Live sessions and the database browser ride a WebSocket on the same host. Behind nginx that needs Upgrade/Connection forwarded and proxy_buffering off, or pairing hangs with nothing in any log.",
   "CS_URL": "http://localhost:24275/",
   "CS_PROJECT_ID": "the id from the last step of the project wizard",
   "CS_PROJECT_SECRET": "the secret from the same screen"
