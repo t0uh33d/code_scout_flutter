@@ -257,8 +257,10 @@ Future<void> _seedStory(WidgetTester tester) async {
   await log(LogLevel.info, 'Checkout started', tags: {'checkout'});
   await log(LogLevel.warning, 'Token expired, refreshing', tags: {'auth'});
   await call('r2', 'POST', 'https://api.shop.dev/v2/auth/refresh', status: 401, took: 210);
-  await call('r3', 'POST', 'https://api.shop.dev/v2/pay',
-      failure: 'Receive timeout', took: 380);
+  // 401 rather than a timeout: the retry reused the token the refresh had just
+  // failed to replace. The dashboard's seed tells the same story, and a film
+  // that says 401 beside a screenshot saying "error" is worse than no film.
+  await call('r3', 'POST', 'https://api.shop.dev/v2/pay', status: 401, took: 380);
   await log(
     LogLevel.error,
     'Payment declined',
