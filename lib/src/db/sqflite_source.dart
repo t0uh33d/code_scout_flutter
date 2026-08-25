@@ -32,7 +32,7 @@ String quoteIdentifier(String id) => '"${id.replaceAll('"', '""')}"';
 /// because this is the same connection the app itself reads through.
 ///
 /// ```dart
-/// await CodeScout.instance.registerDatabase(
+/// CodeScout.instance.registerDatabase(
 ///   'shop.db',
 ///   CodeScoutSqflite(db),
 ///   writable: kDebugMode,

@@ -2,6 +2,17 @@
 
 ### Fixed
 
+- **The package could not be installed alongside any current talker.** The
+  constraint capped at `<5.0.0` while talker's current release is 5.1.20, so
+  `flutter pub add code_scout_talker` failed version solving outright for anyone
+  on 5.x. Widened to `>=4.0.0 <6.0.0`; the observer needed no change and passes
+  its whole suite against 5.1.20.
+- The README's "that is the whole setup" snippet had no `sync:` block, so
+  following it exactly sent nothing to the dashboard. `sync:` has no default,
+  and without it logs are dropped rather than queued.
+
+### Fixed
+
 - The usage snippet on `CodeScoutTalkerObserver` showed `const
   CodeScoutTalkerObserver()`, which does not compile: the constructor has a body,
   because the observer announces itself when it is built. Copying the documented

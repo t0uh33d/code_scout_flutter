@@ -224,6 +224,11 @@ class _InfoScreenState extends State<InfoScreen> {
             "    projectID: '...',\n"
             "    projectSecret: '...',\n"
             '  ),\n'
+            // Without this nothing is uploaded, and nothing is kept either:
+            // the SQLite write is the uploader's queue and is skipped when
+            // there is no uploader. Leaving it out of this snippet sent people
+            // away from the one screen that was trying to help them.
+            '  sync: LogSyncBehavior(),\n'
             ')'),
       ];
     }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:code_scout/code_scout.dart';
+import 'package:code_scout/src/log/ansi_color.dart';
 
 class CSxPrinter {
   final LogEntry logEntry;
@@ -104,19 +105,38 @@ class CSxPrinter {
     }
   }
 
+  /// The colour each level is printed in, as a 256-colour ANSI foreground.
+  ///
+  /// `AnsiColor` sat unused in this package while six places in the docs and on
+  /// the website promised colour coded console output, so this is the claim
+  /// being made true rather than withdrawn.
+  static const _levelColours = <LogLevel, AnsiColor>{
+    LogLevel.verbose: AnsiColor.fg(244), // grey
+    LogLevel.debug: AnsiColor.fg(39), // blue
+    LogLevel.info: AnsiColor.fg(35), // green
+    LogLevel.warning: AnsiColor.fg(214), // amber
+    LogLevel.error: AnsiColor.fg(196), // red
+    LogLevel.fatal: AnsiColor.fg(199), // magenta
+    LogLevel.system: AnsiColor.fg(141), // violet
+  };
+
+  /// Every level gets its own label. `default` used to catch verbose, fatal and
+  /// system and print them as `LogLevel.verbose`, which is the enum's own
+  /// `toString` leaking into what a developer reads all day.
+  static const _levelLabels = <LogLevel, String>{
+    LogLevel.verbose: '🔍 VERBOSE',
+    LogLevel.debug: '🐛 DEBUG',
+    LogLevel.info: 'ℹ️ INFO',
+    LogLevel.warning: '⚠️ WARNING',
+    LogLevel.error: '❌ ERROR',
+    LogLevel.fatal: '💀 FATAL',
+    LogLevel.system: '⚙️ SYSTEM',
+  };
+
   String _formatLogLevel(LogLevel level) {
-    switch (level) {
-      case LogLevel.debug:
-        return '🐛 DEBUG';
-      case LogLevel.info:
-        return 'ℹ️ INFO';
-      case LogLevel.warning:
-        return '⚠️ WARNING';
-      case LogLevel.error:
-        return '❌ ERROR';
-      default:
-        return level.toString();
-    }
+    final label = _levelLabels[level] ?? level.name.toUpperCase();
+    final colour = _levelColours[level];
+    return colour == null ? label : colour(label);
   }
 
   String _getNetworkPhaseEmoji(NetworkCallPhase? phase) {
@@ -172,7 +192,6 @@ class CSxPrinter {
     var min = twoDigits(now.minute);
     var sec = twoDigits(now.second);
     var ms = threeDigits(now.millisecond);
-    var timeSinceStart = now.difference(DateTime.now()).toString();
-    return '$h:$min:$sec.$ms (+$timeSinceStart)';
+    return '$h:$min:$sec.$ms';
   }
 }

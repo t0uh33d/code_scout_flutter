@@ -57,9 +57,14 @@ await CodeScout.instance.init(
       projectID: '...',
       projectSecret: '...',
     ),
+    sync: LogSyncBehavior(),
   ),
 );
 ```
+
+`sync:` has no default, and without it nothing is uploaded and nothing is kept either: the SQLite
+write is the uploader's queue, so it is skipped when there is no uploader. Leaving it out is the
+most common setup mistake there is.
 
 That is the whole setup. Everything through `talker.info()`, `talker.error()`,
 `talker.handle()` and the companion loggers now reaches the dashboard too.

@@ -2,6 +2,27 @@
 
 ### Fixed
 
+- **Every console line carried a malformed elapsed time**, reading
+  `(+-0:00:00.000115)`. The subtraction ran the wrong way round, so the duration
+  was always negative and the format prepended its own plus sign. The timestamp
+  is now just the time.
+- **Three of the seven log levels printed as `LogLevel.verbose`** and friends,
+  because `verbose`, `fatal` and `system` fell through to the enum's own
+  `toString`. They have labels of their own now.
+- **Console output is actually colour coded.** `AnsiColor` had been in this
+  package unused while six places in the docs and on the website promised
+  colour, so the claim is now true rather than withdrawn. One colour per level.
+- The in-app panel's Info screen told a local-mode user how to add a dashboard
+  with a snippet that had no `sync:` block, so following it exactly still
+  uploaded nothing.
+- The dartdoc on `CodeScoutSqflite` awaited `registerDatabase`, which returns
+  void, so the snippet did not compile.
+- The README said logs are "written to the device and never uploaded" without
+  `sync:`. They are not written either: the SQLite table is the uploader's
+  queue, so it is skipped when there is no uploader.
+
+### Fixed
+
 - The README linked `http://localhost:24275` as a link rather than as text, which
   pub.dev counts as an insecure link and docks the package for. It is the address
   a local dashboard really does answer on, so it is written as code now instead of

@@ -28,6 +28,10 @@ run yourself when you want one.
 This is not a crash reporter. Crashlytics tells you the app crashed. CodeScout shows you what it
 was doing for the five minutes before. Plenty of teams run both.
 
+It is not a replacement for DevTools either. DevTools is better than this at everything you can do
+while the device is plugged into your machine. CodeScout is for after that: a build in QA, on a UAT
+device, or in the hands of somebody who cannot tell you what the network did.
+
 **You do not need a server to start.** Add the package, tap the floating button, and read your logs
 and network calls on the phone. That is a real way to use it, not a trial version. Add credentials
 later, when you want them somewhere you can search.
@@ -168,8 +172,10 @@ Three things in there are worth knowing before they cost you an afternoon.
 the default `scout.d()` and `scout.v()` produce nothing at all. Use `LogLevel.all` while you are
 developing.
 
-The `sync:` block has no default. Leave it out and logs are written to the device and never
-uploaded, and the only complaint is a single line in the debug console.
+The `sync:` block has no default, and leaving it out does not queue anything for later: the
+SQLite write is the uploader's queue, so it is skipped when there is no uploader. Logs still
+print to the console and fill the in-app panel for this launch, then go. The only complaint is a
+single line in the debug console.
 
 The `link` is a real address on your network, not `localhost`. On a physical device `localhost`
 means the phone itself. It must start with `http://` or `https://`, contain a host, and end with
