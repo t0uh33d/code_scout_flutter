@@ -1,0 +1,19 @@
+name: code_scout_dio_example
+description: Wiring the CodeScout Dio interceptor into an app.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ^3.10.0
+  flutter: '>=3.38.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  code_scout: ^1.5.0
+  code_scout_dio:
+    path: ../
+  dio: '>=5.2.0 <7.0.0'
+
+dev_dependencies:
+  flutter_lints: ^6.0.0

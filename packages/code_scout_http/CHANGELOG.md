@@ -1,3 +1,9 @@
+## 1.0.4
+
+### Added
+
+- An example showing the client wrapper in an app, including closing it.
+
 ## 1.0.3
 
 ### Changed

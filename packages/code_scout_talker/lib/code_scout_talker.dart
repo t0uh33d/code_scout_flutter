@@ -22,7 +22,7 @@ typedef MappedLog = ({
 /// your hand.
 ///
 /// ```dart
-/// final talker = Talker(observer: const CodeScoutTalkerObserver());
+/// final talker = Talker(observer: CodeScoutTalkerObserver());
 /// ```
 ///
 /// Set CodeScout up as usual with `CodeScout.instance.init`. Before that has

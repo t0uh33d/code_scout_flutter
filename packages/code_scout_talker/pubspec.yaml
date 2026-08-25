@@ -1,6 +1,6 @@
 name: code_scout_talker
 description: 'Talker observer for CodeScout. Forwards everything Talker logs to your CodeScout dashboard, without changing a line of your logging code.'
-version: 1.0.2
+version: 1.0.3
 homepage: https://codescout.tech
 repository: https://github.com/getcodescout/code_scout_flutter/tree/main/packages/code_scout_talker
 

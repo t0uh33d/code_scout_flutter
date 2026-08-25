@@ -474,7 +474,7 @@ cd code_scout
 docker compose up
 ```
 
-Open <http://localhost:24275>, register the first account, and create a project. The project ID and
+Open `http://localhost:24275`, register the first account, and create a project. The project ID and
 secret appear on the last step of the wizard, and you can read the secret again later under
 **Settings → SDK setup**. Put both into `ProjectCredentials`.
 

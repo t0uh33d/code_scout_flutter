@@ -1,3 +1,12 @@
+## 1.5.3
+
+### Fixed
+
+- The README linked `http://localhost:24275` as a link rather than as text, which
+  pub.dev counts as an insecure link and docks the package for. It is the address
+  a local dashboard really does answer on, so it is written as code now instead of
+  being pointed somewhere it is not.
+
 ## 1.5.2
 
 ### Changed

@@ -1,6 +1,6 @@
 name: code_scout_dio
 description: 'Dio interceptor for CodeScout. Automatically captures network requests, responses, and errors.'
-version: 1.0.3
+version: 1.0.4
 homepage: https://codescout.tech
 repository: https://github.com/getcodescout/code_scout_flutter/tree/main/packages/code_scout_dio
 
@@ -12,7 +12,11 @@ dependencies:
   flutter:
     sdk: flutter
   code_scout: ^1.5.0
-  dio: '>=5.0.0 <7.0.0'
+  # 5.2.0, not 5.0.0. `DioException` and `DioExceptionType` do not exist before
+  # it, so the interceptor does not compile against 5.0.0 or 5.1.x: pub.dev's
+  # downgrade analysis found seven errors and anyone pinned to early 5.x would
+  # have hit them on install. Checked by bisecting, 5.1.2 fails and 5.2.0 passes.
+  dio: '>=5.2.0 <7.0.0'
 
 dev_dependencies:
   flutter_test:

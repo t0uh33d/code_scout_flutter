@@ -1,3 +1,16 @@
+## 1.0.3
+
+### Fixed
+
+- The usage snippet on `CodeScoutTalkerObserver` showed `const
+  CodeScoutTalkerObserver()`, which does not compile: the constructor has a body,
+  because the observer announces itself when it is built. Copying the documented
+  line straight into an app was an error.
+
+### Added
+
+- An example forwarding Talker's logs to CodeScout.
+
 ## 1.0.2
 
 ### Changed
