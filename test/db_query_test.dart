@@ -532,4 +532,71 @@ void main() {
       );
     });
   });
+
+  // What may be named, and what happens to a name that is not real.
+  //
+  // These two answer to different sets on purpose, which is worth pinning
+  // because it looks like an oversight when you meet it from the outside:
+  // `namespaces()` is the menu and hides SQLite's own bookkeeping, while
+  // `describe()` accepts anything `PRAGMA table_info` will answer for. Driving
+  // the live tools against a real phone on 2026-08-26 turned up `sqlite_master`
+  // readable without being listed, and this is that behaviour written down.
+  group('what can be named', () {
+    test('the listing hides SQLite\'s own tables', () async {
+      // AUTOINCREMENT is what makes SQLite create sqlite_sequence, so there is
+      // something for the filter to hide. Without this the assertion below is
+      // vacuous: the fixture has no sqlite_ tables, so it passes whether the
+      // filter exists or not, which is how it was first written.
+      await db.execute('CREATE TABLE counters (id INTEGER PRIMARY KEY AUTOINCREMENT, n TEXT)');
+      await db.insert('counters', {'n': 'x'});
+
+      final raw = await db.rawQuery("SELECT name FROM sqlite_master WHERE type = 'table'");
+      expect(
+        raw.map((r) => r['name']),
+        contains('sqlite_sequence'),
+        reason: 'the fixture must hold a sqlite_ table or this test proves nothing',
+      );
+
+      final names = (await source.namespaces()).map((n) => n.name).toList();
+
+      expect(names, contains('flags'));
+      expect(names, contains('v_flags'));
+      expect(names, contains('counters'));
+      expect(names.where((n) => n.startsWith('sqlite_')), isEmpty);
+    });
+
+    test('sqlite_master is still readable, because it is a real table', () async {
+      // Deliberate, not an escape. The app registered this database as
+      // browsable and the schema is already reachable a table at a time, so
+      // refusing the catalog would buy nothing and cost the one view that
+      // answers "what does this database actually look like".
+      final schema = await source.describe('sqlite_master');
+      expect(schema.columns.map((c) => c.name), contains('sql'));
+
+      final page = await source.read(const CodeScoutReadRequest(namespace: 'sqlite_master'));
+      expect(page.rows, isNotEmpty);
+    });
+
+    test('a name that is not in the catalog is refused', () async {
+      await expectLater(
+        source.describe('no_such_table'),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    // The membership check is the defence, not the quoting. An identifier
+    // reaches the PRAGMA quoted, so a payload becomes one long name that no
+    // table has, the pragma answers with nothing, and it is refused there.
+    test('a namespace carrying SQL is refused, and the table it names survives', () async {
+      const payload = 'flags"; DROP TABLE flags; --';
+
+      await expectLater(
+        source.read(const CodeScoutReadRequest(namespace: payload)),
+        throwsA(isA<ArgumentError>()),
+      );
+
+      final after = await source.read(const CodeScoutReadRequest(namespace: 'flags'));
+      expect(after.rows, isNotEmpty, reason: 'flags should be untouched');
+    });
+  });
 }

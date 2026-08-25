@@ -51,6 +51,15 @@ class CodeScoutSqflite implements CodeScoutSource {
     // sqlite_% is SQLite's own bookkeeping: sqlite_sequence, sqlite_stat1 and
     // friends. Listing them would offer a developer a table they did not make
     // and cannot usefully read.
+    //
+    // This hides them from the menu and does not put them out of reach:
+    // `describe` accepts anything `PRAGMA table_info` answers for, so
+    // `sqlite_master` reads fine if you name it. That is deliberate. The app
+    // registered this database as browsable, the schema is already reachable a
+    // table at a time, and the catalog is the one view that answers "what does
+    // this database actually look like". The gap between the two sets is
+    // surprising from the outside, so `what can be named` in db_query_test.dart
+    // pins both halves.
     final rows = await db.rawQuery(
       "SELECT name, type FROM sqlite_master "
       "WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' "
