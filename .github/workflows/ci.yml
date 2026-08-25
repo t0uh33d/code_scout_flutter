@@ -35,13 +35,18 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          # Pinned, not `channel: stable`. Flutter 3.47 (Dart 3.13) landed on
-          # 2026-08-12 and made `pub publish` warn when git status is not
-          # clean, and `--dry-run` exits 65 on a warning, so all four package
-          # jobs went red on a commit that touched three markdown files. A
-          # toolchain release should not be able to fail a build nobody
-          # changed. Same reasoning as pinning templ in the server repo.
-          flutter-version: 3.44.9
+          # Pinned, not `channel: stable`, and the pin is the point rather than
+          # the version: 3.47 turned every package job red on a commit that
+          # touched three markdown files, and a toolchain release should not be
+          # able to do that. Same reasoning as pinning templ in the server repo.
+          #
+          # Bump it deliberately, after running the matrix locally on the new
+          # version. `analysis_options.yaml` carries an `analyzer: exclude:`
+          # block because 3.47's `pub get` writes one if it is missing, which
+          # dirties the tree, which makes `pub publish --dry-run` exit 65 on a
+          # warning. Deleting that block breaks the package jobs and nothing
+          # else, so it will look unrelated.
+          flutter-version: 3.47.0
           channel: stable
           cache: true
 
@@ -83,13 +88,18 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          # Pinned, not `channel: stable`. Flutter 3.47 (Dart 3.13) landed on
-          # 2026-08-12 and made `pub publish` warn when git status is not
-          # clean, and `--dry-run` exits 65 on a warning, so all four package
-          # jobs went red on a commit that touched three markdown files. A
-          # toolchain release should not be able to fail a build nobody
-          # changed. Same reasoning as pinning templ in the server repo.
-          flutter-version: 3.44.9
+          # Pinned, not `channel: stable`, and the pin is the point rather than
+          # the version: 3.47 turned every package job red on a commit that
+          # touched three markdown files, and a toolchain release should not be
+          # able to do that. Same reasoning as pinning templ in the server repo.
+          #
+          # Bump it deliberately, after running the matrix locally on the new
+          # version. `analysis_options.yaml` carries an `analyzer: exclude:`
+          # block because 3.47's `pub get` writes one if it is missing, which
+          # dirties the tree, which makes `pub publish --dry-run` exit 65 on a
+          # warning. Deleting that block breaks the package jobs and nothing
+          # else, so it will look unrelated.
+          flutter-version: 3.47.0
           channel: stable
           cache: true
 
@@ -144,13 +154,18 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          # Pinned, not `channel: stable`. Flutter 3.47 (Dart 3.13) landed on
-          # 2026-08-12 and made `pub publish` warn when git status is not
-          # clean, and `--dry-run` exits 65 on a warning, so all four package
-          # jobs went red on a commit that touched three markdown files. A
-          # toolchain release should not be able to fail a build nobody
-          # changed. Same reasoning as pinning templ in the server repo.
-          flutter-version: 3.44.9
+          # Pinned, not `channel: stable`, and the pin is the point rather than
+          # the version: 3.47 turned every package job red on a commit that
+          # touched three markdown files, and a toolchain release should not be
+          # able to do that. Same reasoning as pinning templ in the server repo.
+          #
+          # Bump it deliberately, after running the matrix locally on the new
+          # version. `analysis_options.yaml` carries an `analyzer: exclude:`
+          # block because 3.47's `pub get` writes one if it is missing, which
+          # dirties the tree, which makes `pub publish --dry-run` exit 65 on a
+          # warning. Deleting that block breaks the package jobs and nothing
+          # else, so it will look unrelated.
+          flutter-version: 3.47.0
           channel: stable
           cache: true
 
