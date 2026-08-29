@@ -66,7 +66,7 @@ which step failed, which answers "why is nothing arriving" more often than anyth
 | **Search it the way you think** | `level:error tag:checkout last:24h`, or `user:ada@example.com` for everything one person hit. Filters live in the URL, so a search is a link you can paste to somebody. |
 | **One bug is one row** | Twenty-six copies of the same failure collapse into a single line with a count, so this morning's new bug is not buried under last week's. |
 | **Replay one launch** | Every log and network call from one run of the app, in order, with the time since launch beside each row. |
-| **Watch a phone live** | Read them a six character code and their logs arrive in your browser as they tap. No install, no TestFlight round trip, no account for them. |
+| **Watch a phone live** | Pair a phone with a short code and its logs arrive in your browser as they tap. No install, no TestFlight round trip, no account for them. |
 | **Read the phone's own database** | While paired, browse the app's SQLite tables, `shared_preferences` and Hive boxes, and change one value at a time. |
 | **Hand it to a coding agent** | The dashboard speaks MCP, so your agent can read a session timeline itself instead of you pasting stack traces into a chat. |
 
